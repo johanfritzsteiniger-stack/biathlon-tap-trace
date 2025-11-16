@@ -1,62 +1,50 @@
-import { Athlete, ShootingRound, Shot, Session } from "@/types/biathlon";
-
-const SHOTS_PER_ROUND = 5;
-
-export const createEmptyShots = (errorCount: number): Shot[] => {
-  const shots: Shot[] = [];
-  // First fill with misses (errors)
-  for (let i = 0; i < errorCount && i < SHOTS_PER_ROUND; i++) {
-    shots.push({ hit: false });
-  }
-  // Then fill remaining with hits
-  for (let i = errorCount; i < SHOTS_PER_ROUND; i++) {
-    shots.push({ hit: true });
-  }
-  return shots;
-};
-
-export const createShootingRounds = (): ShootingRound[] => {
-  return Array.from({ length: 10 }, (_, i) => ({
-    index: (i + 1) as ShootingRound["index"],
-    shots: createEmptyShots(0),
-    errors: 0,
-  }));
-};
+import { Athlete, ShotEntry, Session } from "@/types/biathlon";
 
 export const createAthlete = (name: string): Athlete => {
-  const rounds = createShootingRounds();
   return {
     id: crypto.randomUUID(),
     name,
-    rounds,
+    entries: [],
     totals: {
       errors: 0,
-      hits: 50, // 10 rounds * 5 shots
+      count: 0,
+      avgErrors: 0,
     },
   };
 };
 
-export const calculateTotals = (rounds: ShootingRound[]): Athlete["totals"] => {
-  const errors = rounds.reduce((sum, round) => sum + round.errors, 0);
-  const hits = rounds.length * SHOTS_PER_ROUND - errors;
-  return { errors, hits };
+export const calculateTotals = (entries: ShotEntry[]): Athlete["totals"] => {
+  const errors = entries.reduce((sum, entry) => sum + entry.errors, 0);
+  const count = entries.length;
+  const avgErrors = count > 0 ? errors / count : 0;
+  return { errors, count, avgErrors };
 };
 
-export const updateRoundFromErrors = (round: ShootingRound, errors: number): ShootingRound => {
-  const clampedErrors = Math.max(0, Math.min(SHOTS_PER_ROUND, errors));
+export const addEntry = (athlete: Athlete, errors: 0 | 1 | 2 | 3 | 4 | 5): Athlete => {
+  const newEntry: ShotEntry = {
+    index: athlete.entries.length + 1,
+    errors,
+    timestampISO: new Date().toISOString(),
+  };
+  
+  const updatedEntries = [...athlete.entries, newEntry];
+  
   return {
-    ...round,
-    errors: clampedErrors,
-    shots: createEmptyShots(clampedErrors),
+    ...athlete,
+    entries: updatedEntries,
+    totals: calculateTotals(updatedEntries),
   };
 };
 
-export const updateRoundFromShots = (round: ShootingRound, shots: Shot[]): ShootingRound => {
-  const errors = shots.filter((s) => !s.hit).length;
+export const removeLastEntry = (athlete: Athlete): Athlete => {
+  if (athlete.entries.length === 0) return athlete;
+  
+  const updatedEntries = athlete.entries.slice(0, -1);
+  
   return {
-    ...round,
-    errors,
-    shots,
+    ...athlete,
+    entries: updatedEntries,
+    totals: calculateTotals(updatedEntries),
   };
 };
 
@@ -64,20 +52,26 @@ export const exportToCSV = (session: Session): string => {
   const headers = [
     "date",
     "athlete",
-    ...Array.from({ length: 10 }, (_, i) => `shooting_${i + 1}_errors`),
-    "total_errors",
-    "total_hits",
+    "entry_index",
+    "errors",
+    "timestamp",
+    "total_errors_to_date",
   ];
 
-  const rows = session.athletes.map((athlete) => {
-    const roundErrors = athlete.rounds.map((r) => r.errors);
-    return [
-      session.dateISO.split("T")[0],
-      athlete.name,
-      ...roundErrors,
-      athlete.totals.errors,
-      athlete.totals.hits,
-    ];
+  const rows: string[][] = [];
+  session.athletes.forEach((athlete) => {
+    let errorsSoFar = 0;
+    athlete.entries.forEach((entry) => {
+      errorsSoFar += entry.errors;
+      rows.push([
+        session.dateISO.split("T")[0],
+        athlete.name,
+        entry.index.toString(),
+        entry.errors.toString(),
+        entry.timestampISO,
+        errorsSoFar.toString(),
+      ]);
+    });
   });
 
   const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
