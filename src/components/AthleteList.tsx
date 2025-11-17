@@ -1,105 +1,70 @@
-import { useState, useEffect, useRef } from "react";
-import { Athlete, Session } from "@/types/biathlon";
+import { useState, useRef } from "react";
+import { SessionAthlete, Session, ErrorCount } from "@/types/biathlon";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ErrorInputModal } from "./ErrorInputModal";
 import {
-  createAthlete,
   addEntry,
   removeLastEntry,
-  exportToCSV,
-  downloadCSV,
-  copyToClipboard,
 } from "@/lib/biathlon-utils";
-import { db } from "@/lib/db";
-import { Download, Copy, Undo, Plus, Search } from "lucide-react";
+import { Download, Copy, Undo, Search, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-export const AthleteList = () => {
+interface AthleteListProps {
+  session: Session;
+  onUpdateSession: (session: Session) => void;
+  onEndTraining: () => void;
+  onExport: () => void;
+  onCopy: () => void;
+}
+
+export const AthleteList = ({
+  session,
+  onUpdateSession,
+  onEndTraining,
+  onExport,
+  onCopy,
+}: AthleteListProps) => {
   const { toast } = useToast();
-  const [session, setSession] = useState<Session>(() => ({
-    id: crypto.randomUUID(),
-    dateISO: new Date().toISOString(),
-    athletes: [],
-  }));
-  const [athleteNames, setAthleteNames] = useState<string[]>([]);
-  const [newName, setNewName] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedAthlete, setSelectedAthlete] = useState<Athlete | null>(null);
+  const [selectedAthlete, setSelectedAthlete] = useState<SessionAthlete | null>(null);
   const [lastAction, setLastAction] = useState<{ athleteId: string; action: "add" } | null>(null);
+  const [showEndDialog, setShowEndDialog] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Load initial data
-  useEffect(() => {
-    const loadData = async () => {
-      const names = await db.getAthleteNames();
-      setAthleteNames(names);
-      
-      const athletes = names.map(createAthlete);
-      setSession((prev) => ({ ...prev, athletes }));
-    };
-    loadData();
-  }, []);
-
-  // Auto-save session
-  useEffect(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      db.saveSession(session);
-    }, 300);
-    
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [session]);
-
-  const handleAddName = async () => {
-    const trimmed = newName.trim();
-    if (!trimmed) return;
-    if (athleteNames.includes(trimmed)) {
-      toast({ description: "Name existiert bereits", variant: "destructive" });
-      return;
-    }
-
-    const updatedNames = [...athleteNames, trimmed];
-    setAthleteNames(updatedNames);
-    await db.saveAthleteNames(updatedNames);
-
-    const newAthlete = createAthlete(trimmed);
-    setSession((prev) => ({
-      ...prev,
-      athletes: [...prev.athletes, newAthlete],
-    }));
-
-    setNewName("");
-    toast({ description: `${trimmed} hinzugefügt` });
-  };
-
-  const handleAthleteClick = (athlete: Athlete) => {
+  const handleAthleteClick = (athlete: SessionAthlete) => {
+    if (session.status === "completed") return;
     setSelectedAthlete(athlete);
   };
 
-  const handleSaveEntry = (errors: 0 | 1 | 2 | 3 | 4 | 5) => {
-    if (!selectedAthlete) return;
+  const handleSaveEntry = (errors: ErrorCount) => {
+    if (!selectedAthlete || session.status === "completed") return;
 
     const updatedAthlete = addEntry(selectedAthlete, errors);
-    setSession((prev) => ({
-      ...prev,
-      athletes: prev.athletes.map((a) =>
-        a.id === updatedAthlete.id ? updatedAthlete : a
+    const updatedSession = {
+      ...session,
+      athletes: session.athletes.map((a) =>
+        a.athleteId === updatedAthlete.athleteId ? updatedAthlete : a
       ),
-    }));
-
-    setLastAction({ athleteId: updatedAthlete.id, action: "add" });
+    };
+    
+    onUpdateSession(updatedSession);
+    setLastAction({ athleteId: updatedAthlete.athleteId, action: "add" });
 
     toast({
-      description: `Gespeichert: ${updatedAthlete.name}, Fehler: ${errors} (Einlage #${updatedAthlete.entries.length})`,
+      description: `Gespeichert: ${updatedAthlete.nameSnapshot}, Fehler: ${errors} (Einlage #${updatedAthlete.entries.length})`,
       action: (
         <Button size="sm" variant="ghost" onClick={handleUndo}>
           Undo
@@ -109,41 +74,26 @@ export const AthleteList = () => {
   };
 
   const handleUndo = () => {
-    if (!lastAction) return;
+    if (!lastAction || session.status === "completed") return;
 
-    const athlete = session.athletes.find((a) => a.id === lastAction.athleteId);
+    const athlete = session.athletes.find((a) => a.athleteId === lastAction.athleteId);
     if (!athlete) return;
 
     const updatedAthlete = removeLastEntry(athlete);
-    setSession((prev) => ({
-      ...prev,
-      athletes: prev.athletes.map((a) =>
-        a.id === updatedAthlete.id ? updatedAthlete : a
+    const updatedSession = {
+      ...session,
+      athletes: session.athletes.map((a) =>
+        a.athleteId === updatedAthlete.athleteId ? updatedAthlete : a
       ),
-    }));
-
+    };
+    
+    onUpdateSession(updatedSession);
     setLastAction(null);
     toast({ description: "Rückgängig gemacht" });
   };
 
-  const handleExportCSV = () => {
-    const csv = exportToCSV(session);
-    const filename = `biathlon_${session.dateISO.split("T")[0]}.csv`;
-    downloadCSV(csv, filename);
-    toast({ description: "CSV exportiert" });
-  };
-
-  const handleCopyCSV = async () => {
-    const csv = exportToCSV(session);
-    const success = await copyToClipboard(csv);
-    toast({
-      description: success ? "In Zwischenablage kopiert" : "Kopieren fehlgeschlagen",
-      variant: success ? "default" : "destructive",
-    });
-  };
-
   const filteredAthletes = session.athletes.filter((a) =>
-    a.name.toLowerCase().includes(searchQuery.toLowerCase())
+    a.nameSnapshot.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -151,20 +101,19 @@ export const AthleteList = () => {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-card border-b border-border shadow-sm p-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Sportler:innen</h1>
-
-          {/* Add new athlete */}
-          <div className="flex gap-2 mb-4">
-            <Input
-              placeholder="Neuer Name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddName()}
-              className="flex-1"
-            />
-            <Button onClick={handleAddName} size="icon">
-              <Plus className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold">{session.name}</h1>
+              <p className="text-sm text-muted-foreground">
+                {new Date(session.dateISO).toLocaleDateString("de-DE")}
+              </p>
+            </div>
+            {session.status === "active" && (
+              <Button onClick={() => setShowEndDialog(true)} variant="destructive" size="sm">
+                <LogOut className="h-4 w-4" />
+                Training beenden
+              </Button>
+            )}
           </div>
 
           {/* Search & Actions */}
@@ -178,13 +127,18 @@ export const AthleteList = () => {
                 className="pl-9"
               />
             </div>
-            <Button onClick={handleUndo} variant="ghost" size="icon" disabled={!lastAction}>
+            <Button 
+              onClick={handleUndo} 
+              variant="ghost" 
+              size="icon" 
+              disabled={!lastAction || session.status === "completed"}
+            >
               <Undo className="h-4 w-4" />
             </Button>
-            <Button onClick={handleCopyCSV} variant="ghost" size="icon">
+            <Button onClick={onCopy} variant="ghost" size="icon">
               <Copy className="h-4 w-4" />
             </Button>
-            <Button onClick={handleExportCSV} variant="ghost" size="icon">
+            <Button onClick={onExport} variant="ghost" size="icon">
               <Download className="h-4 w-4" />
             </Button>
           </div>
@@ -196,13 +150,15 @@ export const AthleteList = () => {
         <div className="grid gap-3">
           {filteredAthletes.map((athlete) => (
             <Card
-              key={athlete.id}
-              className="p-4 cursor-pointer hover:bg-accent transition-colors"
+              key={athlete.athleteId}
+              className={`p-4 transition-colors ${
+                session.status === "active" ? "cursor-pointer hover:bg-accent" : "opacity-75"
+              }`}
               onClick={() => handleAthleteClick(athlete)}
             >
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{athlete.name}</h3>
+                  <h3 className="font-semibold text-lg">{athlete.nameSnapshot}</h3>
                   <div className="flex gap-2 mt-1 flex-wrap">
                     <Badge variant="secondary">
                       {athlete.totals.count}× Schießeinlagen
@@ -223,22 +179,40 @@ export const AthleteList = () => {
 
           {filteredAthletes.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
-              {searchQuery ? "Keine Sportler:innen gefunden" : "Noch keine Sportler:innen"}
+              {searchQuery ? "Keine Sportler:innen gefunden" : "Keine Teilnehmer"}
             </div>
           )}
         </div>
       </main>
 
       {/* Error Input Modal */}
-      {selectedAthlete && (
+      {selectedAthlete && session.status === "active" && (
         <ErrorInputModal
           open={!!selectedAthlete}
           onClose={() => setSelectedAthlete(null)}
-          athleteName={selectedAthlete.name}
+          athleteName={selectedAthlete.nameSnapshot}
           entryNumber={selectedAthlete.entries.length + 1}
           onSave={handleSaveEntry}
         />
       )}
+
+      {/* End Training Dialog */}
+      <AlertDialog open={showEndDialog} onOpenChange={setShowEndDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Training beenden?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Training "{session.name}" beenden? Danach sind keine weiteren Eingaben möglich.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={onEndTraining}>
+              Beenden
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -1,32 +1,42 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { Session, Athlete } from '@/types/biathlon';
+import { Session, AthleteMaster, AppState } from '@/types/biathlon';
 
 interface BiathlonDB extends DBSchema {
   sessions: {
     key: string;
     value: Session;
   };
-  athletes: {
+  roster: {
     key: string;
-    value: { names: string[] };
+    value: AthleteMaster;
+  };
+  appState: {
+    key: string;
+    value: AppState;
   };
 }
 
 const DB_NAME = 'biathlon-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBPDatabase<BiathlonDB>> | null = null;
 
 const getDB = async () => {
   if (!dbPromise) {
     dbPromise = openDB<BiathlonDB>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion) {
         if (!db.objectStoreNames.contains('sessions')) {
           db.createObjectStore('sessions', { keyPath: 'id' });
         }
-        if (!db.objectStoreNames.contains('athletes')) {
-          db.createObjectStore('athletes');
+        if (!db.objectStoreNames.contains('roster')) {
+          db.createObjectStore('roster', { keyPath: 'id' });
         }
+        if (!db.objectStoreNames.contains('appState')) {
+          db.createObjectStore('appState');
+        }
+        
+        // Migration from V1 to V2 - remove old athletes store
+        // Data migration happens in getAppState
       },
     });
   }
@@ -34,11 +44,76 @@ const getDB = async () => {
 };
 
 export const db = {
+  // AppState
+  getAppState: async (): Promise<AppState> => {
+    try {
+      const database = await getDB();
+      const state = await database.get('appState', 'state');
+      
+      if (!state) {
+        // Initialize with default seed data
+        const defaultState: AppState = {
+          roster: [
+            { id: crypto.randomUUID(), name: 'Max Mustermann', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+            { id: crypto.randomUUID(), name: 'Anna Schmidt', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+            { id: crypto.randomUUID(), name: 'Lars König', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+          ],
+          sessions: [],
+          version: 2,
+        };
+        await database.put('appState', defaultState, 'state');
+        return defaultState;
+      }
+      
+      return state;
+    } catch (error) {
+      console.error('Failed to get app state:', error);
+      return {
+        roster: [],
+        sessions: [],
+        version: 2,
+      };
+    }
+  },
+
+  saveAppState: async (state: AppState): Promise<void> => {
+    try {
+      const database = await getDB();
+      await database.put('appState', state, 'state');
+    } catch (error) {
+      console.error('Failed to save app state:', error);
+    }
+  },
+
+  // Roster
+  getRoster: async (): Promise<AthleteMaster[]> => {
+    try {
+      const state = await db.getAppState();
+      return state.roster;
+    } catch (error) {
+      console.error('Failed to get roster:', error);
+      return [];
+    }
+  },
+
+  addToRoster: async (athlete: AthleteMaster): Promise<void> => {
+    try {
+      const state = await db.getAppState();
+      const exists = state.roster.find(a => a.name === athlete.name);
+      if (!exists) {
+        state.roster.push(athlete);
+        await db.saveAppState(state);
+      }
+    } catch (error) {
+      console.error('Failed to add to roster:', error);
+    }
+  },
+
   // Sessions
   getSessions: async (): Promise<Session[]> => {
     try {
-      const database = await getDB();
-      return await database.getAll('sessions');
+      const state = await db.getAppState();
+      return state.sessions;
     } catch (error) {
       console.error('Failed to get sessions:', error);
       return [];
@@ -47,8 +122,8 @@ export const db = {
 
   getSession: async (id: string): Promise<Session | undefined> => {
     try {
-      const database = await getDB();
-      return await database.get('sessions', id);
+      const state = await db.getAppState();
+      return state.sessions.find(s => s.id === id);
     } catch (error) {
       console.error('Failed to get session:', error);
       return undefined;
@@ -57,8 +132,14 @@ export const db = {
 
   saveSession: async (session: Session): Promise<void> => {
     try {
-      const database = await getDB();
-      await database.put('sessions', session);
+      const state = await db.getAppState();
+      const index = state.sessions.findIndex(s => s.id === session.id);
+      if (index >= 0) {
+        state.sessions[index] = session;
+      } else {
+        state.sessions.push(session);
+      }
+      await db.saveAppState(state);
     } catch (error) {
       console.error('Failed to save session:', error);
     }
@@ -66,31 +147,34 @@ export const db = {
 
   deleteSession: async (id: string): Promise<void> => {
     try {
-      const database = await getDB();
-      await database.delete('sessions', id);
+      const state = await db.getAppState();
+      state.sessions = state.sessions.filter(s => s.id !== id);
+      await db.saveAppState(state);
     } catch (error) {
       console.error('Failed to delete session:', error);
     }
   },
 
-  // Athlete names
-  getAthleteNames: async (): Promise<string[]> => {
+  getCurrentSession: async (): Promise<Session | undefined> => {
     try {
-      const database = await getDB();
-      const data = await database.get('athletes', 'names');
-      return data?.names || ['Max Mustermann', 'Anna Schmidt', 'Lars König'];
+      const state = await db.getAppState();
+      if (state.currentSessionId) {
+        return state.sessions.find(s => s.id === state.currentSessionId);
+      }
+      return undefined;
     } catch (error) {
-      console.error('Failed to get athlete names:', error);
-      return ['Max Mustermann', 'Anna Schmidt', 'Lars König'];
+      console.error('Failed to get current session:', error);
+      return undefined;
     }
   },
 
-  saveAthleteNames: async (names: string[]): Promise<void> => {
+  setCurrentSessionId: async (sessionId: string | undefined): Promise<void> => {
     try {
-      const database = await getDB();
-      await database.put('athletes', { names }, 'names');
+      const state = await db.getAppState();
+      state.currentSessionId = sessionId;
+      await db.saveAppState(state);
     } catch (error) {
-      console.error('Failed to save athlete names:', error);
+      console.error('Failed to set current session:', error);
     }
   },
 };
