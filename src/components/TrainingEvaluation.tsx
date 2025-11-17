@@ -1,23 +1,28 @@
-import { Session } from "@/types/biathlon";
+import { Session, SessionAthlete, ShotEntry } from "@/types/biathlon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { exportToCSV, exportSessionSummaryToCSV, copyToClipboard, downloadCSV } from "@/lib/biathlon-utils";
+import { exportToCSV, exportSessionSummaryToCSV, copyToClipboard, downloadCSV, calculateHitRate, calculateTotals } from "@/lib/biathlon-utils";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Copy, BarChart3, Calendar, Users } from "lucide-react";
+import { Download, Copy, BarChart3, Calendar, Users, Edit } from "lucide-react";
+import { AthleteEntryEditor } from "./AthleteEntryEditor";
+import { useState } from "react";
 
 interface TrainingEvaluationProps {
   session: Session;
   onNewTraining: () => void;
   onViewArchive: () => void;
+  onUpdateSession: (session: Session) => void;
 }
 
 export const TrainingEvaluation = ({
   session,
   onNewTraining,
   onViewArchive,
+  onUpdateSession,
 }: TrainingEvaluationProps) => {
   const { toast } = useToast();
+  const [editingAthleteId, setEditingAthleteId] = useState<string | null>(null);
 
   const handleExportCSV = () => {
     const csv = exportToCSV(session);
@@ -44,7 +49,39 @@ export const TrainingEvaluation = ({
 
   const totalErrors = session.athletes.reduce((sum, a) => sum + a.totals.errors, 0);
   const totalEntries = session.athletes.reduce((sum, a) => sum + a.totals.count, 0);
-  const avgSessionErrors = totalEntries > 0 ? totalErrors / totalEntries : 0;
+  const totalShots = totalEntries * 5;
+  const totalHits = session.athletes.reduce((sum, a) => {
+    const { totalHits } = calculateHitRate(a.entries);
+    return sum + totalHits;
+  }, 0);
+  const sessionHitRatePct = totalShots > 0 ? (totalHits / totalShots) * 100 : 0;
+
+  const handleSaveEntries = (athleteId: string, updatedEntries: ShotEntry[]) => {
+    const updatedAthletes = session.athletes.map(a => {
+      if (a.athleteId === athleteId) {
+        const reindexedEntries = updatedEntries.map((e, idx) => ({ ...e, index: idx + 1 }));
+        return {
+          ...a,
+          entries: reindexedEntries,
+          totals: calculateTotals(reindexedEntries),
+        };
+      }
+      return a;
+    });
+
+    const updatedSession = {
+      ...session,
+      athletes: updatedAthletes,
+    };
+
+    onUpdateSession(updatedSession);
+    setEditingAthleteId(null);
+    
+    const changedCount = updatedEntries.filter(e => e.editedAt).length;
+    toast({ 
+      description: `Aktualisiert: ${session.athletes.find(a => a.athleteId === athleteId)?.nameSnapshot} – ${changedCount} Einlagen geändert` 
+    });
+  };
 
   const getErrorDistribution = (athleteId: string) => {
     const athlete = session.athletes.find(a => a.athleteId === athleteId);
@@ -109,8 +146,8 @@ export const TrainingEvaluation = ({
               <div className="text-sm text-muted-foreground">Fehler gesamt</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold">{avgSessionErrors.toFixed(1)}</div>
-              <div className="text-sm text-muted-foreground">Ø Fehler/Einlage</div>
+              <div className="text-3xl font-bold text-primary">{sessionHitRatePct.toFixed(1)}%</div>
+              <div className="text-sm text-muted-foreground">Trefferquote</div>
             </div>
           </div>
         </Card>
@@ -120,44 +157,69 @@ export const TrainingEvaluation = ({
           <h2 className="text-lg font-semibold">Sportler:innen</h2>
           {session.athletes.map((athlete) => {
             const distribution = getErrorDistribution(athlete.athleteId);
+            const { totalHits, totalShots, hitRatePct } = calculateHitRate(athlete.entries);
+            const isEditing = editingAthleteId === athlete.athleteId;
+            
             return (
               <Card key={athlete.athleteId} className="p-4">
-                <h3 className="font-semibold text-lg mb-3">{athlete.nameSnapshot}</h3>
-                
-                <div className="grid grid-cols-3 gap-4 mb-4">
-                  <div>
-                    <div className="text-2xl font-bold">{athlete.totals.count}</div>
-                    <div className="text-xs text-muted-foreground">Einlagen</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-destructive">{athlete.totals.errors}</div>
-                    <div className="text-xs text-muted-foreground">Fehler</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold">{athlete.totals.avgErrors.toFixed(1)}</div>
-                    <div className="text-xs text-muted-foreground">Ø Fehler</div>
-                  </div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-lg">{athlete.nameSnapshot}</h3>
+                  {!isEditing && (
+                    <Button
+                      onClick={() => setEditingAthleteId(athlete.athleteId)}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Einlagen bearbeiten
+                    </Button>
+                  )}
                 </div>
 
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">Fehlerverteilung</div>
-                  <div className="space-y-1">
-                    {distribution.map((count, errors) => (
-                      <div key={errors} className="flex items-center gap-2">
-                        <span className="text-xs w-12">{errors} Fehler</span>
-                        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary transition-all"
-                            style={{
-                              width: athlete.totals.count > 0 ? `${(count / athlete.totals.count) * 100}%` : '0%',
-                            }}
-                          />
-                        </div>
-                        <span className="text-xs w-12 text-right">{count}×</span>
+                {isEditing ? (
+                  <AthleteEntryEditor
+                    athlete={athlete}
+                    onSave={(entries) => handleSaveEntries(athlete.athleteId, entries)}
+                    onCancel={() => setEditingAthleteId(null)}
+                  />
+                ) : (
+                  <>
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                      <div>
+                        <div className="text-2xl font-bold">{athlete.totals.count}</div>
+                        <div className="text-xs text-muted-foreground">Einlagen</div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                      <div>
+                        <div className="text-2xl font-bold text-destructive">{athlete.totals.errors}</div>
+                        <div className="text-xs text-muted-foreground">Fehler</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-primary">{hitRatePct.toFixed(1)}%</div>
+                        <div className="text-xs text-muted-foreground">Trefferquote</div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">Fehlerverteilung</div>
+                      <div className="space-y-1">
+                        {distribution.map((count, errors) => (
+                          <div key={errors} className="flex items-center gap-2">
+                            <span className="text-xs w-12">{errors} Fehler</span>
+                            <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary transition-all"
+                                style={{
+                                  width: athlete.totals.count > 0 ? `${(count / athlete.totals.count) * 100}%` : '0%',
+                                }}
+                              />
+                            </div>
+                            <span className="text-xs w-12 text-right">{count}×</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
               </Card>
             );
           })}

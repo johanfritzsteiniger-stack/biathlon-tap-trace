@@ -7,6 +7,7 @@ export type ShotEntry = {
   index: number;
   errors: ErrorCount;
   timestampISO: TimestampISO;
+  editedAt?: TimestampISO;
 };
 
 export type AthleteMaster = {
