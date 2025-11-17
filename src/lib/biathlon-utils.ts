@@ -68,6 +68,28 @@ export const removeEntry = (athlete: SessionAthlete, entryId: string): SessionAt
   };
 };
 
+export const updateEntry = (athlete: SessionAthlete, entryId: string, errors: ErrorCount): SessionAthlete => {
+  const updatedEntries = athlete.entries.map(e => 
+    e.id === entryId 
+      ? { ...e, errors, editedAt: new Date().toISOString() }
+      : e
+  );
+  
+  return {
+    ...athlete,
+    entries: updatedEntries,
+    totals: calculateTotals(updatedEntries),
+  };
+};
+
+export const calculateHitRate = (entries: ShotEntry[]): { totalHits: number; totalShots: number; hitRatePct: number } => {
+  const totalShots = entries.length * 5;
+  const totalHits = entries.reduce((sum, entry) => sum + (5 - entry.errors), 0);
+  const hitRatePct = totalShots > 0 ? (totalHits / totalShots) * 100 : 0;
+  
+  return { totalHits, totalShots, hitRatePct };
+};
+
 export const exportToCSV = (session: Session): string => {
   const headers = [
     "session_name",
@@ -107,17 +129,24 @@ export const exportSessionSummaryToCSV = (session: Session): string => {
     "athlete",
     "total_entries",
     "total_errors",
-    "avg_errors",
+    "total_hits",
+    "total_shots",
+    "hit_rate_pct",
   ];
 
-  const rows: string[][] = session.athletes.map((athlete) => [
-    session.name,
-    session.dateISO.split("T")[0],
-    athlete.nameSnapshot,
-    athlete.totals.count.toString(),
-    athlete.totals.errors.toString(),
-    athlete.totals.avgErrors.toFixed(2),
-  ]);
+  const rows: string[][] = session.athletes.map((athlete) => {
+    const { totalHits, totalShots, hitRatePct } = calculateHitRate(athlete.entries);
+    return [
+      session.name,
+      session.dateISO.split("T")[0],
+      athlete.nameSnapshot,
+      athlete.totals.count.toString(),
+      athlete.totals.errors.toString(),
+      totalHits.toString(),
+      totalShots.toString(),
+      hitRatePct.toFixed(1),
+    ];
+  });
 
   const csv = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
   return csv;

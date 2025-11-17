@@ -152,6 +152,7 @@ const Index = () => {
         session={currentSession}
         onNewTraining={handleNewTraining}
         onViewArchive={() => setView("archive")}
+        onUpdateSession={handleUpdateSession}
       />
     );
   }
