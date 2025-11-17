@@ -1,12 +1,25 @@
+export type ID = string;
+export type TimestampISO = string;
+export type ErrorCount = 0 | 1 | 2 | 3 | 4 | 5;
+
 export type ShotEntry = {
+  id: ID;
   index: number;
-  errors: 0 | 1 | 2 | 3 | 4 | 5;
-  timestampISO: string;
+  errors: ErrorCount;
+  timestampISO: TimestampISO;
 };
 
-export type Athlete = {
-  id: string;
+export type AthleteMaster = {
+  id: ID;
   name: string;
+  createdAt: TimestampISO;
+  updatedAt: TimestampISO;
+  archived?: boolean;
+};
+
+export type SessionAthlete = {
+  athleteId: ID;
+  nameSnapshot: string;
   entries: ShotEntry[];
   totals: {
     errors: number;
@@ -15,8 +28,21 @@ export type Athlete = {
   };
 };
 
+export type SessionStatus = 'active' | 'completed';
+
 export type Session = {
-  id: string;
+  id: ID;
+  name: string;
   dateISO: string;
-  athletes: Athlete[];
+  status: SessionStatus;
+  athletes: SessionAthlete[];
+  createdAt: TimestampISO;
+  completedAt?: TimestampISO;
+};
+
+export type AppState = {
+  roster: AthleteMaster[];
+  sessions: Session[];
+  currentSessionId?: ID;
+  version: number;
 };
