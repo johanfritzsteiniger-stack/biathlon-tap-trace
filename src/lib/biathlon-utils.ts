@@ -29,11 +29,12 @@ export const calculateTotals = (entries: ShotEntry[]): SessionAthlete["totals"] 
   return { errors, count, avgErrors };
 };
 
-export const addEntry = (athlete: SessionAthlete, errors: ErrorCount): SessionAthlete => {
+export const addEntry = (athlete: SessionAthlete, errors: ErrorCount, position: 'prone' | 'standing' | 'unknown' = 'unknown'): SessionAthlete => {
   const newEntry: ShotEntry = {
     id: crypto.randomUUID(),
     index: athlete.entries.length + 1,
     errors,
+    position,
     timestampISO: new Date().toISOString(),
   };
   
@@ -68,10 +69,15 @@ export const removeEntry = (athlete: SessionAthlete, entryId: string): SessionAt
   };
 };
 
-export const updateEntry = (athlete: SessionAthlete, entryId: string, errors: ErrorCount): SessionAthlete => {
+export const updateEntry = (
+  athlete: SessionAthlete, 
+  entryId: string, 
+  errors: ErrorCount, 
+  position?: 'prone' | 'standing' | 'unknown'
+): SessionAthlete => {
   const updatedEntries = athlete.entries.map(e => 
     e.id === entryId 
-      ? { ...e, errors, editedAt: new Date().toISOString() }
+      ? { ...e, errors, position: position ?? e.position, editedAt: new Date().toISOString() }
       : e
   );
   

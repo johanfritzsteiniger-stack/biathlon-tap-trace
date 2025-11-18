@@ -1,11 +1,13 @@
 export type ID = string;
 export type TimestampISO = string;
 export type ErrorCount = 0 | 1 | 2 | 3 | 4 | 5;
+export type ShotPosition = 'prone' | 'standing' | 'unknown';
 
 export type ShotEntry = {
   id: ID;
   index: number;
   errors: ErrorCount;
+  position: ShotPosition;
   timestampISO: TimestampISO;
   editedAt?: TimestampISO;
 };

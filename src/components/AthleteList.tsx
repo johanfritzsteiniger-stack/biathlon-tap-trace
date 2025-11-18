@@ -49,34 +49,39 @@ export const AthleteList = ({
     setSelectedAthlete(athlete);
   };
 
-  const handleSaveEntry = (errors: ErrorCount) => {
-    if (!selectedAthlete || session.status === "completed") return;
+  const handleSaveEntry = (athleteId: string, errors: ErrorCount, position: 'prone' | 'standing') => {
+    const updatedAthletes = session.athletes.map((a) => {
+      if (a.athleteId === athleteId) {
+        return addEntry(a, errors, position);
+      }
+      return a;
+    });
 
-    const updatedAthlete = addEntry(selectedAthlete, errors);
     const updatedSession = {
       ...session,
-      athletes: session.athletes.map((a) =>
-        a.athleteId === updatedAthlete.athleteId ? updatedAthlete : a
-      ),
+      athletes: updatedAthletes,
     };
-    
-    onUpdateSession(updatedSession);
-    setLastAction({ athleteId: updatedAthlete.athleteId, action: "add" });
 
-    toast({
-      description: `Gespeichert: ${updatedAthlete.nameSnapshot}, Fehler: ${errors} (Einlage #${updatedAthlete.entries.length})`,
+    onUpdateSession(updatedSession);
+    
+    const athlete = updatedAthletes.find(a => a.athleteId === athleteId);
+    const positionLabel = position === 'prone' ? 'Liegend' : 'Stehend';
+    setLastAction({ athleteId, action: "add" });
+    
+    toast({ 
+      description: `Gespeichert: ${athlete?.nameSnapshot}, ${positionLabel}, Fehler: ${errors} (#${athlete?.entries.length})`,
       action: (
-        <Button size="sm" variant="ghost" onClick={handleUndo}>
-          Undo
+        <Button variant="outline" size="sm" onClick={() => handleUndo(athleteId)}>
+          Rückgängig
         </Button>
       ),
     });
   };
 
-  const handleUndo = () => {
-    if (!lastAction || session.status === "completed") return;
+  const handleUndo = (athleteId: string) => {
+    if (session.status === "completed") return;
 
-    const athlete = session.athletes.find((a) => a.athleteId === lastAction.athleteId);
+    const athlete = session.athletes.find((a) => a.athleteId === athleteId);
     if (!athlete) return;
 
     const updatedAthlete = removeLastEntry(athlete);
@@ -91,6 +96,7 @@ export const AthleteList = ({
     setLastAction(null);
     toast({ description: "Rückgängig gemacht" });
   };
+
 
   const filteredAthletes = session.athletes.filter((a) =>
     a.nameSnapshot.toLowerCase().includes(searchQuery.toLowerCase())
@@ -128,7 +134,11 @@ export const AthleteList = ({
               />
             </div>
             <Button 
-              onClick={handleUndo} 
+              onClick={() => {
+                if (lastAction) {
+                  handleUndo(lastAction.athleteId);
+                }
+              }} 
               variant="ghost" 
               size="icon" 
               disabled={!lastAction || session.status === "completed"}
@@ -192,7 +202,10 @@ export const AthleteList = ({
           onClose={() => setSelectedAthlete(null)}
           athleteName={selectedAthlete.nameSnapshot}
           entryNumber={selectedAthlete.entries.length + 1}
-          onSave={handleSaveEntry}
+          onSave={(errors, position) => {
+            handleSaveEntry(selectedAthlete.athleteId, errors, position);
+            setSelectedAthlete(null);
+          }}
         />
       )}
 
