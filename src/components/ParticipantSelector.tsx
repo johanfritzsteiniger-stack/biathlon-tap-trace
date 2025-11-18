@@ -33,7 +33,10 @@ export const ParticipantSelector = ({
   const [search, setSearch] = useState("");
   const [newName, setNewName] = useState("");
 
-  const filteredRoster = roster.filter((a) =>
+  // Filter out archived athletes by default
+  const activeRoster = roster.filter(a => !a.archived);
+  
+  const filteredRoster = activeRoster.filter((a) =>
     a.name.toLowerCase().includes(search.toLowerCase())
   );
 

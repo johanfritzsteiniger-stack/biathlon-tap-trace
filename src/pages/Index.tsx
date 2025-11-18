@@ -119,6 +119,10 @@ const Index = () => {
     toast({ description: `Training "${newSession.name}" erstellt` });
   };
 
+  const handleDeleteSession = (sessionId: string) => {
+    setAllSessions(allSessions.filter(s => s.id !== sessionId));
+  };
+
   const handleNewTraining = () => {
     setCurrentSession(null);
     setView("start");
@@ -141,6 +145,7 @@ const Index = () => {
         sessions={allSessions}
         onOpenSession={handleOpenSession}
         onDuplicateSession={handleDuplicateSession}
+        onDeleteSession={handleDeleteSession}
         onNewTraining={handleNewTraining}
       />
     );

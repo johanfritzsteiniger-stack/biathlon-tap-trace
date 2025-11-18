@@ -2,12 +2,16 @@ import { Session } from "@/types/biathlon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Target, Copy } from "lucide-react";
+import { Calendar, Users, Target, Copy, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { db } from "@/lib/db";
+import { useToast } from "@/hooks/use-toast";
 
 interface TrainingArchiveProps {
   sessions: Session[];
   onOpenSession: (sessionId: string) => void;
   onDuplicateSession: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string) => void;
   onNewTraining: () => void;
 }
 
@@ -15,15 +19,22 @@ export const TrainingArchive = ({
   sessions,
   onOpenSession,
   onDuplicateSession,
+  onDeleteSession,
   onNewTraining,
 }: TrainingArchiveProps) => {
+  const { toast } = useToast();
   const completedSessions = sessions
     .filter((s) => s.status === "completed")
     .sort((a, b) => new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime());
 
+  const handleDelete = async (sessionId: string) => {
+    await db.deleteSession(sessionId);
+    onDeleteSession(sessionId);
+    toast({ description: "Training gelöscht" });
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-card border-b border-border shadow-sm p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between">
@@ -33,7 +44,6 @@ export const TrainingArchive = ({
         </div>
       </header>
 
-      {/* Content */}
       <main className="max-w-4xl mx-auto p-4">
         {completedSessions.length === 0 ? (
           <Card className="p-12 text-center">
@@ -75,31 +85,45 @@ export const TrainingArchive = ({
                       </div>
 
                       <div className="flex gap-2 flex-wrap">
-                        <Badge variant="outline">
-                          {totalEntries} Einlagen
-                        </Badge>
-                        <Badge variant="outline">
-                          {totalErrors} Fehler
-                        </Badge>
-                        {totalEntries > 0 && (
-                          <Badge variant="outline">
-                            Ø {(totalErrors / totalEntries).toFixed(1)} Fehler/Einlage
-                          </Badge>
-                        )}
+                        <Badge variant="outline">{totalEntries} Einlagen</Badge>
+                        <Badge variant="outline">{totalErrors} Fehler</Badge>
                       </div>
                     </div>
 
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDuplicateSession(session.id);
-                      }}
-                      title="Als neues Training duplizieren"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDuplicateSession(session.id);
+                        }}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Training löschen?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Training „{session.name}" dauerhaft löschen? Aktion kann nicht rückgängig gemacht werden.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(session.id)}>
+                              Löschen
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </Card>
               );

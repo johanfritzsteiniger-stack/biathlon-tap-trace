@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ interface ErrorInputModalProps {
   onClose: () => void;
   athleteName: string;
   entryNumber: number;
-  onSave: (errors: 0 | 1 | 2 | 3 | 4 | 5) => void;
+  onSave: (errors: 0 | 1 | 2 | 3 | 4 | 5, position: 'prone' | 'standing') => void;
 }
 
 export const ErrorInputModal = ({
@@ -24,39 +24,33 @@ export const ErrorInputModal = ({
   entryNumber,
   onSave,
 }: ErrorInputModalProps) => {
-  const [selectedErrors, setSelectedErrors] = useState<0 | 1 | 2 | 3 | 4 | 5 | null>(null);
-
-  useEffect(() => {
-    if (!open) {
-      setSelectedErrors(null);
+  
+  // Vibration feedback
+  const vibrate = () => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(10);
     }
-  }, [open]);
+  };
+
+  const handleQuickSave = (errors: 0 | 1 | 2 | 3 | 4 | 5, position: 'prone' | 'standing') => {
+    vibrate();
+    onSave(errors, position);
+    onClose();
+  };
 
   // Keyboard shortcuts
   useEffect(() => {
     if (!open) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key >= "0" && e.key <= "5") {
-        const errors = parseInt(e.key) as 0 | 1 | 2 | 3 | 4 | 5;
-        setSelectedErrors(errors);
-      } else if (e.key === "Enter" && selectedErrors !== null) {
-        handleSave();
-      } else if (e.key === "Escape") {
+      if (e.key === "Escape") {
         onClose();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, selectedErrors]);
-
-  const handleSave = () => {
-    if (selectedErrors !== null) {
-      onSave(selectedErrors);
-      onClose();
-    }
-  };
+  }, [open, onClose]);
 
   const errorButtons: Array<0 | 1 | 2 | 3 | 4 | 5> = [0, 1, 2, 3, 4, 5];
 
@@ -65,33 +59,56 @@ export const ErrorInputModal = ({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-xl">{athleteName} – Schießeinlage #{entryNumber}</DialogTitle>
-          <DialogDescription>Fehler (0–5)</DialogDescription>
+          <DialogDescription>Fehler (0–5) – Ein Tap speichert sofort</DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-3 py-4">
-          {errorButtons.map((errors) => (
-            <Button
-              key={errors}
-              onClick={() => setSelectedErrors(errors)}
-              variant={selectedErrors === errors ? "default" : "outline"}
-              size="lg"
-              className={cn(
-                "h-16 text-2xl font-bold transition-all",
-                selectedErrors === errors && "ring-2 ring-primary ring-offset-2"
-              )}
-              aria-label={`${errors} Fehler`}
-            >
-              {errors}
-            </Button>
-          ))}
+        <div className="space-y-4 py-4">
+          {/* Prone (Liegend) */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-muted-foreground">Liegend</div>
+            <div className="grid grid-cols-3 gap-2">
+              {errorButtons.map((errors) => (
+                <Button
+                  key={`prone-${errors}`}
+                  onClick={() => handleQuickSave(errors, 'prone')}
+                  variant="outline"
+                  size="lg"
+                  className={cn(
+                    "h-14 text-2xl font-bold transition-all hover:scale-105 active:scale-95"
+                  )}
+                  aria-label={`Liegend Fehler ${errors}`}
+                >
+                  {errors}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* Standing (Stehend) */}
+          <div className="space-y-2">
+            <div className="text-sm font-medium text-muted-foreground">Stehend</div>
+            <div className="grid grid-cols-3 gap-2">
+              {errorButtons.map((errors) => (
+                <Button
+                  key={`standing-${errors}`}
+                  onClick={() => handleQuickSave(errors, 'standing')}
+                  variant="outline"
+                  size="lg"
+                  className={cn(
+                    "h-14 text-2xl font-bold transition-all hover:scale-105 active:scale-95"
+                  )}
+                  aria-label={`Stehend Fehler ${errors}`}
+                >
+                  {errors}
+                </Button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        <div className="flex gap-2 justify-end">
+        <div className="flex justify-end">
           <Button onClick={onClose} variant="ghost">
             Abbrechen
-          </Button>
-          <Button onClick={handleSave} disabled={selectedErrors === null}>
-            Speichern
           </Button>
         </div>
       </DialogContent>
