@@ -43,7 +43,7 @@ const Home = () => {
           >
             <div className="flex w-full items-center justify-between">
               <span className="text-xl font-semibold">Neues Training</span>
-              <Play className="h-6 w-6 opacity-80" />
+              <Play className="h-10 w-10 opacity-80" />
             </div>
             <span className="text-sm font-normal opacity-70">Trainingsname & Teilnehmer wählen</span>
           </Button>
@@ -68,7 +68,7 @@ const Home = () => {
           >
             <div className="flex w-full items-center justify-between">
               <span className="text-xl font-semibold">Sportlerprofile</span>
-              <Users className="h-6 w-6 opacity-80" />
+              <Users className="h-10 w-10 opacity-80" />
             </div>
             <span className="text-sm font-normal opacity-70">Alle Profile (A–Z)</span>
           </Button>
