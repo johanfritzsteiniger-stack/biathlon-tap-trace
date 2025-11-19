@@ -64,10 +64,10 @@ export const AthleteEntryEditor = ({ athlete, onSave, onCancel }: AthleteEntryEd
 
   const getPositionBadge = (position: ShotPosition) => {
     if (position === 'prone') {
-      return <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-300">Liegend</Badge>;
+      return <Badge variant="prone">Liegend</Badge>;
     }
     if (position === 'standing') {
-      return <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-300">Stehend</Badge>;
+      return <Badge variant="standing">Stehend</Badge>;
     }
     return <Badge variant="outline">Unbekannt</Badge>;
   };
