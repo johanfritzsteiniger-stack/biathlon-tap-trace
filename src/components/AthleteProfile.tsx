@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface AthleteProfileProps {
   athlete: AthleteMaster;
-  profile: AthleteProfileType;
+  profile?: AthleteProfileType;
   onBack: () => void;
 }
 
@@ -19,6 +19,36 @@ const formatPct = (value: number) => (isNaN(value) ? "—" : `${value.toFixed(1)
 export const AthleteProfile = ({ athlete, profile, onBack }: AthleteProfileProps) => {
   const { toast } = useToast();
   const [sortBy, setSortBy] = useState<"date" | "hitRate">("date");
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="mx-auto max-w-screen-sm">
+          <Card className="p-8">
+            <div className="mb-6 flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={onBack}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="text-2xl font-bold">{athlete.name}</h1>
+            </div>
+            <div className="space-y-4 text-center">
+              <Target className="mx-auto h-16 w-16 text-muted-foreground" />
+              <div>
+                <h2 className="text-xl font-semibold">Kein Profil aktiviert</h2>
+                <p className="mt-2 text-muted-foreground">
+                  Für {athlete.name} wurde noch kein Profil aktiviert. Aktivieren Sie das Profil in der Stammliste,
+                  um Trainingsdaten zu speichern und auszuwerten.
+                </p>
+              </div>
+              <Button onClick={onBack} className="mt-4">
+                Zurück zur Übersicht
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   const totals = calculateProfileTotals(profile);
 
