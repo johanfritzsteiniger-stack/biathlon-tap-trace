@@ -173,32 +173,33 @@ const ProfilesIndex = () => {
 
     handleVibrate();
     try {
-      const passwordHash = await hashPassword(loginPassword);
+      // Get the auth token from localStorage
+      const token = localStorage.getItem('auth_token');
       
-      // Get the current session token
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
+      if (!token) {
         toast.error("Sie müssen angemeldet sein");
         return;
       }
 
-      const { error } = await supabase
-        .from('user_credentials')
-        .insert({
-          name: loginUsername.trim(),
-          password_hash: passwordHash,
-          role: 'athlete',
-          athlete_name: selectedAthleteForLogin.name
-        });
+      const { data, error } = await supabase.functions.invoke('create-athlete-login', {
+        body: {
+          username: loginUsername.trim(),
+          password: loginPassword,
+          athleteName: selectedAthleteForLogin.name
+        },
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
 
       if (error) {
-        console.error("Insert error:", error);
-        if (error.code === '23505') {
-          toast.error("Benutzername existiert bereits");
-        } else {
-          toast.error("Fehler beim Erstellen des Login-Zugangs: " + error.message);
-        }
+        console.error("Function error:", error);
+        toast.error(error.message || "Fehler beim Erstellen des Login-Zugangs");
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
         return;
       }
 
