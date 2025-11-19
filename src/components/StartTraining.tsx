@@ -85,8 +85,7 @@ export const StartTraining = ({
           <div className="space-y-2">
             <Label>Teilnehmer ({selectedAthletes.length})</Label>
             <Button
-              variant="outline"
-              className="w-full"
+              className="w-full bg-teal text-teal-foreground hover:bg-teal/90"
               onClick={() => setShowSelector(true)}
             >
               Teilnehmer wählen
@@ -105,7 +104,7 @@ export const StartTraining = ({
           <Button
             onClick={handleStart}
             disabled={!trainingName.trim() || selectedAthletes.length === 0}
-            className="w-full"
+            className="w-full bg-alt text-alt-foreground hover:bg-alt/90"
             size="lg"
           >
             Training starten
@@ -113,8 +112,7 @@ export const StartTraining = ({
 
           <div className="flex gap-2">
             <Button
-              variant="outline"
-              className="flex-1"
+              className="flex-1 bg-teal text-teal-foreground hover:bg-teal/90"
               onClick={onViewArchive}
             >
               <Archive className="h-4 w-4" />

@@ -32,6 +32,9 @@ All colors MUST be HSL.
     --alt: 263 37% 45%;
     --alt-foreground: 0 0% 100%;
 
+    --teal: 177 47% 51%;
+    --teal-foreground: 0 0% 100%;
+
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
@@ -76,6 +79,9 @@ All colors MUST be HSL.
 
     --alt: 263 37% 55%;
     --alt-foreground: 0 0% 100%;
+
+    --teal: 177 47% 51%;
+    --teal-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
