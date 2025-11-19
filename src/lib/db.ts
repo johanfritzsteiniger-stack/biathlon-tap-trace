@@ -109,6 +109,16 @@ export const db = {
     }
   },
 
+  deleteFromRoster: async (athleteId: string): Promise<void> => {
+    try {
+      const state = await db.getAppState();
+      state.roster = state.roster.filter(a => a.id !== athleteId);
+      await db.saveAppState(state);
+    } catch (error) {
+      console.error('Failed to delete from roster:', error);
+    }
+  },
+
   // Sessions
   getSessions: async (): Promise<Session[]> => {
     try {
