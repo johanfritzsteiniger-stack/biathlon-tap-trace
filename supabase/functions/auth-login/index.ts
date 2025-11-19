@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { verify } from "https://deno.land/x/scrypt@v4.4.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,8 +40,8 @@ serve(async (req) => {
       );
     }
 
-    // Überprüfe Passwort
-    const isValidPassword = verify(password, user.password_hash);
+    // Überprüfe Passwort mit Web Crypto API
+    const isValidPassword = await verifyPassword(password, user.password_hash);
     
     if (!isValidPassword) {
       console.log('Invalid password for user:', name);
@@ -77,6 +76,23 @@ serve(async (req) => {
     );
   }
 });
+
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  try {
+    // Hash das eingegebene Passwort mit SHA-256
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // Vergleiche mit dem gespeicherten Hash
+    return hashHex === hash;
+  } catch (error) {
+    console.error('Password verification error:', error);
+    return false;
+  }
+}
 
 async function createJWT(user: any) {
   const header = {
