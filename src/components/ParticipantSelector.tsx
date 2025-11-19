@@ -19,7 +19,6 @@ interface ParticipantSelectorProps {
   roster: AthleteMaster[];
   selectedAthletes: AthleteMaster[];
   onSelect: (athletes: AthleteMaster[]) => void;
-  onAddToRoster: (athlete: AthleteMaster) => void;
 }
 
 export const ParticipantSelector = ({
@@ -28,7 +27,6 @@ export const ParticipantSelector = ({
   roster,
   selectedAthletes,
   onSelect,
-  onAddToRoster,
 }: ParticipantSelectorProps) => {
   const [search, setSearch] = useState("");
   const [newName, setNewName] = useState("");
@@ -64,9 +62,8 @@ export const ParticipantSelector = ({
       return;
     }
 
-    const newAthlete = createAthleteMaster(trimmed);
-    onAddToRoster(newAthlete);
-    onSelect([...selectedAthletes, newAthlete]);
+    // Nutzer können hier keine Athleten zur Stammliste hinzufügen
+    // Sie müssen zu "Sportlerprofile" gehen
     setNewName("");
   };
 

@@ -207,10 +207,6 @@ const Index = () => {
         roster={roster}
         onStartTraining={handleStartTraining}
         onViewArchive={() => setView("archive")}
-        onAddToRoster={handleAddToRoster}
-        onDeleteFromRoster={handleDeleteFromRoster}
-        onUpdateRoster={handleUpdateRoster}
-        onViewProfile={handleViewProfile}
       />
     );
   }

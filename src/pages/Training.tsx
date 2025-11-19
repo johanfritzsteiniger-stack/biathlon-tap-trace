@@ -328,10 +328,6 @@ const Training = () => {
             roster={roster}
             onStartTraining={handleStartTraining}
             onViewArchive={() => navigate("/archive")}
-            onAddToRoster={(athlete) => handleAddToRoster(athlete.name, athlete.profileEnabled)}
-            onDeleteFromRoster={handleDeleteFromRoster}
-            onUpdateRoster={(athlete) => handleUpdateRoster(athlete.id, athlete)}
-            onViewProfile={handleViewProfile}
             onBack={() => navigate("/")}
           />
         );
