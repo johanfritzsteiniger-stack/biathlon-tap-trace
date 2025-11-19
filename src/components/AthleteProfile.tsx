@@ -40,7 +40,7 @@ export const AthleteProfile = ({ athlete, profile, onBack }: AthleteProfileProps
                   um Trainingsdaten zu speichern und auszuwerten.
                 </p>
               </div>
-              <Button onClick={onBack} className="mt-4">
+              <Button onClick={onBack} className="mt-4 bg-teal text-teal-foreground hover:bg-teal/90">
                 Zurück zur Übersicht
               </Button>
             </div>
@@ -84,7 +84,7 @@ export const AthleteProfile = ({ athlete, profile, onBack }: AthleteProfileProps
             <ArrowLeft className="mr-2 h-4 w-4" />
             Zurück
           </Button>
-          <Button variant="outline" onClick={handleExport}>
+          <Button className="bg-teal text-teal-foreground hover:bg-teal/90" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             CSV Export
           </Button>
@@ -161,14 +161,14 @@ export const AthleteProfile = ({ athlete, profile, onBack }: AthleteProfileProps
         {/* Sort Controls */}
         <div className="flex gap-2">
           <Button
-            variant={sortBy === "date" ? "default" : "outline"}
+            className={sortBy === "date" ? "bg-alt text-alt-foreground hover:bg-alt/90" : "bg-teal text-teal-foreground hover:bg-teal/90"}
             size="sm"
             onClick={() => setSortBy("date")}
           >
             Nach Datum
           </Button>
           <Button
-            variant={sortBy === "hitRate" ? "default" : "outline"}
+            className={sortBy === "hitRate" ? "bg-alt text-alt-foreground hover:bg-alt/90" : "bg-teal text-teal-foreground hover:bg-teal/90"}
             size="sm"
             onClick={() => setSortBy("hitRate")}
           >
