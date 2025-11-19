@@ -102,6 +102,7 @@ export const exportToCSV = (session: Session): string => {
     "session_date",
     "athlete",
     "entry_index",
+    "position",
     "errors",
     "timestamp",
     "total_errors_to_date",
@@ -117,6 +118,7 @@ export const exportToCSV = (session: Session): string => {
         session.dateISO.split("T")[0],
         athlete.nameSnapshot,
         entry.index.toString(),
+        entry.position,
         entry.errors.toString(),
         entry.timestampISO,
         errorsSoFar.toString(),
@@ -138,10 +140,23 @@ export const exportSessionSummaryToCSV = (session: Session): string => {
     "total_hits",
     "total_shots",
     "hit_rate_pct",
+    "prone_entries",
+    "prone_errors",
+    "prone_hit_rate_pct",
+    "standing_entries",
+    "standing_errors",
+    "standing_hit_rate_pct",
   ];
 
   const rows: string[][] = session.athletes.map((athlete) => {
     const { totalHits, totalShots, hitRatePct } = calculateHitRate(athlete.entries);
+    
+    const proneEntries = athlete.entries.filter(e => e.position === 'prone');
+    const standingEntries = athlete.entries.filter(e => e.position === 'standing');
+    
+    const proneStats = calculateHitRate(proneEntries);
+    const standingStats = calculateHitRate(standingEntries);
+    
     return [
       session.name,
       session.dateISO.split("T")[0],
@@ -151,6 +166,12 @@ export const exportSessionSummaryToCSV = (session: Session): string => {
       totalHits.toString(),
       totalShots.toString(),
       hitRatePct.toFixed(1),
+      proneEntries.length.toString(),
+      proneEntries.reduce((sum, e) => sum + e.errors, 0).toString(),
+      proneStats.hitRatePct.toFixed(1),
+      standingEntries.length.toString(),
+      standingEntries.reduce((sum, e) => sum + e.errors, 0).toString(),
+      standingStats.hitRatePct.toFixed(1),
     ];
   });
 

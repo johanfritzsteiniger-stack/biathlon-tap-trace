@@ -1,4 +1,4 @@
-import { Session, SessionAthlete, ShotEntry } from "@/types/biathlon";
+import { Session, SessionAthlete, ShotEntry, ShotPosition } from "@/types/biathlon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -92,6 +92,19 @@ export const TrainingEvaluation = ({
     return dist;
   };
 
+  const getPositionStats = (entries: ShotEntry[], position: ShotPosition) => {
+    const filtered = entries.filter(e => e.position === position);
+    const { totalHits, totalShots, hitRatePct } = calculateHitRate(filtered);
+    const totalErrors = filtered.reduce((sum, e) => sum + e.errors, 0);
+    return {
+      count: filtered.length,
+      errors: totalErrors,
+      hits: totalHits,
+      shots: totalShots,
+      hitRatePct,
+    };
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -158,6 +171,8 @@ export const TrainingEvaluation = ({
           {session.athletes.map((athlete) => {
             const distribution = getErrorDistribution(athlete.athleteId);
             const { totalHits, totalShots, hitRatePct } = calculateHitRate(athlete.entries);
+            const proneStats = getPositionStats(athlete.entries, 'prone');
+            const standingStats = getPositionStats(athlete.entries, 'standing');
             const isEditing = editingAthleteId === athlete.athleteId;
             
             return (
@@ -197,6 +212,56 @@ export const TrainingEvaluation = ({
                         <div className="text-2xl font-bold text-primary">{hitRatePct.toFixed(1)}%</div>
                         <div className="text-xs text-muted-foreground">Trefferquote</div>
                       </div>
+                    </div>
+
+                    {/* Position-based Statistics */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <Card className="p-3 bg-blue-500/10 border-blue-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="bg-blue-500/20 text-blue-700 dark:text-blue-300">
+                            Liegend
+                          </Badge>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Einlagen:</span>
+                            <span className="font-semibold">{proneStats.count}×</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Fehler:</span>
+                            <span className="font-semibold">{proneStats.errors}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Trefferquote:</span>
+                            <span className="font-semibold text-primary">
+                              {proneStats.count > 0 ? `${proneStats.hitRatePct.toFixed(1)}%` : '—'}
+                            </span>
+                          </div>
+                        </div>
+                      </Card>
+                      <Card className="p-3 bg-green-500/10 border-green-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="bg-green-500/20 text-green-700 dark:text-green-300">
+                            Stehend
+                          </Badge>
+                        </div>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Einlagen:</span>
+                            <span className="font-semibold">{standingStats.count}×</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Fehler:</span>
+                            <span className="font-semibold">{standingStats.errors}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Trefferquote:</span>
+                            <span className="font-semibold text-primary">
+                              {standingStats.count > 0 ? `${standingStats.hitRatePct.toFixed(1)}%` : '—'}
+                            </span>
+                          </div>
+                        </div>
+                      </Card>
                     </div>
 
                     <div className="space-y-2">

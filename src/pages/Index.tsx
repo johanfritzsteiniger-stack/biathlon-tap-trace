@@ -40,6 +40,13 @@ const Index = () => {
     setRoster([...roster, athlete]);
   };
 
+  const handleDeleteFromRoster = async (athleteId: string) => {
+    await db.deleteFromRoster(athleteId);
+    const updatedRoster = await db.getRoster();
+    setRoster(updatedRoster);
+    toast({ description: "Sportler:in aus Stammliste entfernt" });
+  };
+
   const handleStartTraining = async (session: Session) => {
     await db.saveSession(session);
     await db.setCurrentSessionId(session.id);
@@ -135,6 +142,7 @@ const Index = () => {
         onStartTraining={handleStartTraining}
         onViewArchive={() => setView("archive")}
         onAddToRoster={handleAddToRoster}
+        onDeleteFromRoster={handleDeleteFromRoster}
       />
     );
   }
