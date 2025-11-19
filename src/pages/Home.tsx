@@ -38,7 +38,7 @@ const Home = () => {
         <Card className="space-y-4 p-6 shadow-lg">
           <Button
             onClick={handleNewTraining}
-            className="h-auto min-h-[72px] w-full flex-col items-start justify-center gap-1 rounded-2xl bg-primary px-6 text-left text-primary-foreground shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
+            className="h-auto min-h-[72px] w-full flex-col items-start justify-center gap-1 rounded-2xl bg-alt px-6 text-left text-alt-foreground shadow-md transition-all hover:bg-alt/90 hover:shadow-lg active:scale-[0.98]"
             size="lg"
           >
             <div className="flex w-full items-center justify-between">
@@ -63,7 +63,7 @@ const Home = () => {
 
           <Button
             onClick={handleProfiles}
-            className="h-auto min-h-[72px] w-full flex-col items-start justify-center gap-1 rounded-2xl bg-primary px-6 text-left text-primary-foreground shadow-md transition-all hover:shadow-lg active:scale-[0.98]"
+            className="h-auto min-h-[72px] w-full flex-col items-start justify-center gap-1 rounded-2xl bg-alt px-6 text-left text-alt-foreground shadow-md transition-all hover:bg-alt/90 hover:shadow-lg active:scale-[0.98]"
             size="lg"
           >
             <div className="flex w-full items-center justify-between">
