@@ -205,7 +205,7 @@ const ProfilesIndex = () => {
               </div>
               <div className="flex gap-2">
                 <Button
-                  variant="outline"
+                  className="bg-teal text-teal-foreground hover:bg-teal/90"
                   size="sm"
                   onClick={() => {
                     handleVibrate();
@@ -215,6 +215,7 @@ const ProfilesIndex = () => {
                   Verwalten
                 </Button>
                 <Button
+                  className="bg-teal text-teal-foreground hover:bg-teal/90"
                   size="sm"
                   onClick={() => {
                     handleVibrate();
@@ -390,7 +391,7 @@ const ProfilesIndex = () => {
                     </div>
                     <div className="flex gap-2">
                       <Button
-                        variant="outline"
+                        className="bg-teal text-teal-foreground hover:bg-teal/90"
                         size="sm"
                         onClick={() => handleToggleProfile(item.athlete)}
                         title={item.athlete.profileEnabled ? "Profil deaktivieren" : "Profil aktivieren"}
@@ -399,7 +400,7 @@ const ProfilesIndex = () => {
                       </Button>
                       {item.athlete.profileEnabled && (
                         <Button
-                          variant="outline"
+                          className="bg-teal text-teal-foreground hover:bg-teal/90"
                           size="sm"
                           onClick={() => {
                             handleVibrate();
@@ -412,7 +413,7 @@ const ProfilesIndex = () => {
                       )}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm">
+                          <Button className="bg-teal text-teal-foreground hover:bg-teal/90" size="sm">
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </AlertDialogTrigger>
