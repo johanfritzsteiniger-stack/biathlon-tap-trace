@@ -1,15 +1,31 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Play, Users, FolderOpen } from "lucide-react";
+import { Play, Users, FolderOpen, LogOut } from "lucide-react";
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user, loading, logout } = useAuth();
+
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
 
   const handleVibrate = () => {
     if (navigator.vibrate) {
       navigator.vibrate(10);
     }
+  };
+
+  const handleLogout = () => {
+    handleVibrate();
+    logout();
+    navigate('/login');
   };
 
   const handleNewTraining = () => {
@@ -27,12 +43,33 @@ const Home = () => {
     navigate("/archive");
   };
 
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-background p-4 flex items-center justify-center">
+        <p className="text-muted-foreground">Lädt...</p>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <main className="min-h-screen bg-background p-4">
       <div className="mx-auto max-w-screen-sm space-y-6 pt-8">
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold text-foreground">Biathlon Training</h1>
-          <p className="text-sm text-muted-foreground">Schnelle Erfassung von Schießergebnissen</p>
+          <p className="text-sm text-muted-foreground">Willkommen, {user.name}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogout}
+            className="mx-auto gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Abmelden
+          </Button>
         </div>
 
         <Card className="space-y-4 p-6 shadow-lg">
