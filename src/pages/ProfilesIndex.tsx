@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Search, ArrowLeft, UserPlus, Trash2, Power } from "lucide-react";
+import { ChevronRight, Search, ArrowLeft, UserPlus, Trash2, Power, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,9 @@ import {
 import { db } from "@/lib/db";
 import type { AthleteMaster, AthleteProfile } from "@/types/biathlon";
 import { calculateProfileTotals } from "@/lib/profile-utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 type AthleteWithProfile = {
   athlete: AthleteMaster;
@@ -32,6 +35,7 @@ type AthleteWithProfile = {
 
 const ProfilesIndex = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [athletes, setAthletes] = useState<AthleteWithProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
@@ -39,6 +43,10 @@ const ProfilesIndex = () => {
   const [newAthleteName, setNewAthleteName] = useState("");
   const [newAthleteProfileEnabled, setNewAthleteProfileEnabled] = useState(true);
   const [showManageDialog, setShowManageDialog] = useState(false);
+  const [showCreateLoginDialog, setShowCreateLoginDialog] = useState(false);
+  const [selectedAthleteForLogin, setSelectedAthleteForLogin] = useState<AthleteMaster | null>(null);
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -133,6 +141,66 @@ const ProfilesIndex = () => {
       await loadAthletes();
     } catch (error) {
       console.error("Error toggling profile:", error);
+    }
+  };
+
+  const handleOpenCreateLogin = (athlete: AthleteMaster) => {
+    handleVibrate();
+    setSelectedAthleteForLogin(athlete);
+    setLoginUsername(athlete.name.toLowerCase().replace(/\s+/g, ''));
+    setLoginPassword("");
+    setShowCreateLoginDialog(true);
+  };
+
+  const hashPassword = async (password: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const handleCreateLogin = async () => {
+    if (!selectedAthleteForLogin || !loginUsername.trim() || !loginPassword.trim()) {
+      toast.error("Bitte alle Felder ausfüllen");
+      return;
+    }
+
+    if (user?.role !== 'admin') {
+      toast.error("Nur Admins können Login-Zugänge erstellen");
+      return;
+    }
+
+    handleVibrate();
+    try {
+      const passwordHash = await hashPassword(loginPassword);
+      
+      const { error } = await supabase
+        .from('user_credentials')
+        .insert({
+          name: loginUsername.trim(),
+          password_hash: passwordHash,
+          role: 'athlete',
+          athlete_name: selectedAthleteForLogin.name
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.error("Benutzername existiert bereits");
+        } else {
+          toast.error("Fehler beim Erstellen des Login-Zugangs");
+        }
+        return;
+      }
+
+      toast.success(`Login-Zugang für ${selectedAthleteForLogin.name} erstellt`);
+      setShowCreateLoginDialog(false);
+      setSelectedAthleteForLogin(null);
+      setLoginUsername("");
+      setLoginPassword("");
+    } catch (error) {
+      console.error("Error creating login:", error);
+      toast.error("Fehler beim Erstellen des Login-Zugangs");
     }
   };
 
@@ -390,6 +458,16 @@ const ProfilesIndex = () => {
                       </div>
                     </div>
                     <div className="flex gap-2">
+                      {user?.role === 'admin' && (
+                        <Button
+                          className="bg-teal text-teal-foreground hover:bg-teal/90"
+                          size="sm"
+                          onClick={() => handleOpenCreateLogin(item.athlete)}
+                          title="Login erstellen"
+                        >
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         className="bg-teal text-teal-foreground hover:bg-teal/90"
                         size="sm"
@@ -441,6 +519,55 @@ const ProfilesIndex = () => {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Schließen</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Login-Zugang erstellen Dialog */}
+      <AlertDialog open={showCreateLoginDialog} onOpenChange={setShowCreateLoginDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Login-Zugang erstellen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Erstellen Sie einen Login-Zugang für {selectedAthleteForLogin?.name}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="login-username">Benutzername</Label>
+              <Input
+                id="login-username"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+                placeholder="Benutzername"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="login-password">Passwort</Label>
+              <Input
+                id="login-password"
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                placeholder="Passwort"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowCreateLoginDialog(false);
+              setSelectedAthleteForLogin(null);
+              setLoginUsername("");
+              setLoginPassword("");
+            }}>
+              Abbrechen
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleCreateLogin}
+              disabled={!loginUsername.trim() || !loginPassword.trim()}
+            >
+              Erstellen
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
