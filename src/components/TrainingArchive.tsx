@@ -2,7 +2,7 @@ import { Session } from "@/types/biathlon";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Target, Copy, Trash2 } from "lucide-react";
+import { Calendar, Users, Target, Copy, Trash2, ArrowLeft } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { db } from "@/lib/db";
 import { useToast } from "@/hooks/use-toast";
@@ -37,8 +37,13 @@ export const TrainingArchive = ({
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border shadow-sm p-4">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Trainingsarchiv</h1>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={onNewTraining}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <h1 className="text-2xl font-bold">Trainingsarchiv</h1>
+            </div>
             <Button onClick={onNewTraining}>Neues Training</Button>
           </div>
         </div>

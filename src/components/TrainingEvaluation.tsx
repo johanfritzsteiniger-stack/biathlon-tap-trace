@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { exportToCSV, exportSessionSummaryToCSV, copyToClipboard, downloadCSV, calculateHitRate, calculateTotals } from "@/lib/biathlon-utils";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Copy, BarChart3, Calendar, Users, Edit, Target } from "lucide-react";
+import { Download, Copy, BarChart3, Calendar, Users, Edit, Target, ArrowLeft } from "lucide-react";
 import { AthleteEntryEditor } from "./AthleteEntryEditor";
 import { useState } from "react";
 
@@ -113,17 +113,22 @@ export const TrainingEvaluation = ({
       <header className="bg-card border-b border-border shadow-sm p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">{session.name}</h1>
-              <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  {new Date(session.dateISO).toLocaleDateString("de-DE")}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  {session.athletes.length} Teilnehmer
-                </span>
+            <div className="flex items-center gap-3 flex-1">
+              <Button variant="ghost" size="icon" onClick={onNewTraining}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold">{session.name}</h1>
+                <div className="flex gap-4 mt-1 text-sm text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {new Date(session.dateISO).toLocaleDateString("de-DE")}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    {session.athletes.length} Teilnehmer
+                  </span>
+                </div>
               </div>
             </div>
             <Badge variant="secondary">Abgeschlossen</Badge>

@@ -332,6 +332,7 @@ const Training = () => {
             onDeleteFromRoster={handleDeleteFromRoster}
             onUpdateRoster={(athlete) => handleUpdateRoster(athlete.id, athlete)}
             onViewProfile={handleViewProfile}
+            onBack={() => navigate("/")}
           />
         );
 
@@ -340,7 +341,7 @@ const Training = () => {
           navigate("/training?view=start");
           return null;
         }
-        return <AthleteList session={currentSession} onUpdateSession={handleUpdateSession} onEndTraining={handleEndTraining} onExport={() => handleExportCSV(currentSession.id)} onCopy={() => handleCopyCSV(currentSession.id)} />;
+        return <AthleteList session={currentSession} onUpdateSession={handleUpdateSession} onEndTraining={handleEndTraining} onExport={() => handleExportCSV(currentSession.id)} onCopy={() => handleCopyCSV(currentSession.id)} onBack={() => navigate("/")} />;
 
       case "evaluation":
         const evalSession = params.sessionId ? sessions.find((s) => s.id === params.sessionId) : currentSession;
