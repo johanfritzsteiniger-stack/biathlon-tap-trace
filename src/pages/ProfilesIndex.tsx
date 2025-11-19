@@ -175,6 +175,14 @@ const ProfilesIndex = () => {
     try {
       const passwordHash = await hashPassword(loginPassword);
       
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Sie müssen angemeldet sein");
+        return;
+      }
+
       const { error } = await supabase
         .from('user_credentials')
         .insert({
@@ -185,10 +193,11 @@ const ProfilesIndex = () => {
         });
 
       if (error) {
+        console.error("Insert error:", error);
         if (error.code === '23505') {
           toast.error("Benutzername existiert bereits");
         } else {
-          toast.error("Fehler beim Erstellen des Login-Zugangs");
+          toast.error("Fehler beim Erstellen des Login-Zugangs: " + error.message);
         }
         return;
       }
