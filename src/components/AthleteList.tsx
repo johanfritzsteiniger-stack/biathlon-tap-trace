@@ -9,7 +9,7 @@ import {
   addEntry,
   removeLastEntry,
 } from "@/lib/biathlon-utils";
-import { Download, Copy, Undo, Search, LogOut } from "lucide-react";
+import { Download, Copy, Undo, Search, LogOut, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -28,6 +28,7 @@ interface AthleteListProps {
   onEndTraining: () => void;
   onExport: () => void;
   onCopy: () => void;
+  onBack?: () => void;
 }
 
 export const AthleteList = ({
@@ -36,6 +37,7 @@ export const AthleteList = ({
   onEndTraining,
   onExport,
   onCopy,
+  onBack,
 }: AthleteListProps) => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,11 +110,18 @@ export const AthleteList = ({
       <header className="sticky top-0 z-10 bg-card border-b border-border shadow-sm p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold">{session.name}</h1>
-              <p className="text-sm text-muted-foreground">
-                {new Date(session.dateISO).toLocaleDateString("de-DE")}
-              </p>
+            <div className="flex items-center gap-3 flex-1">
+              {onBack && (
+                <Button variant="ghost" size="icon" onClick={onBack}>
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              )}
+              <div>
+                <h1 className="text-2xl font-bold">{session.name}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(session.dateISO).toLocaleDateString("de-DE")}
+                </p>
+              </div>
             </div>
             {session.status === "active" && (
               <Button onClick={() => setShowEndDialog(true)} variant="destructive" size="sm">

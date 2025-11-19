@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ParticipantSelector } from "./ParticipantSelector";
 import { Session, AthleteMaster } from "@/types/biathlon";
 import { createSessionAthlete, createAthleteMaster } from "@/lib/biathlon-utils";
-import { Calendar, Archive, Users, Trash2 } from "lucide-react";
+import { Calendar, Archive, Users, Trash2, ArrowLeft } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface StartTrainingProps {
@@ -18,6 +18,7 @@ interface StartTrainingProps {
   onDeleteFromRoster: (athleteId: string) => void;
   onUpdateRoster: (athlete: AthleteMaster) => void;
   onViewProfile: (athleteId: string) => void;
+  onBack?: () => void;
 }
 
 export const StartTraining = ({
@@ -28,6 +29,7 @@ export const StartTraining = ({
   onDeleteFromRoster,
   onUpdateRoster,
   onViewProfile,
+  onBack,
 }: StartTrainingProps) => {
   const [trainingName, setTrainingName] = useState("");
   const [trainingDate, setTrainingDate] = useState(new Date().toISOString().split("T")[0]);
@@ -75,6 +77,13 @@ export const StartTraining = ({
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-6 space-y-6">
         <div className="text-center space-y-2">
+          {onBack && (
+            <div className="flex justify-start mb-2">
+              <Button variant="ghost" size="icon" onClick={onBack}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </div>
+          )}
           <h1 className="text-3xl font-bold">Biathlon Training</h1>
           <p className="text-muted-foreground">Neues Training starten</p>
         </div>
