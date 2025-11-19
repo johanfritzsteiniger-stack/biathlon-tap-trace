@@ -18,6 +18,7 @@ export type AthleteMaster = {
   createdAt: TimestampISO;
   updatedAt: TimestampISO;
   archived?: boolean;
+  profileEnabled?: boolean;
 };
 
 export type SessionAthlete = {
@@ -43,9 +44,34 @@ export type Session = {
   completedAt?: TimestampISO;
 };
 
+export type ProfileSessionSummary = {
+  sessionId: ID;
+  sessionName: string;
+  dateISO: string;
+  
+  shotsTotal: number;
+  hitsTotal: number;
+  hitRatePct: number;
+  
+  proneShots: number;
+  proneHits: number;
+  proneHitRatePct: number;
+  
+  standingShots: number;
+  standingHits: number;
+  standingHitRatePct: number;
+};
+
+export type AthleteProfile = {
+  athleteId: ID;
+  summaries: ProfileSessionSummary[];
+  updatedAt: TimestampISO;
+};
+
 export type AppState = {
   roster: AthleteMaster[];
   sessions: Session[];
+  profiles: Record<ID, AthleteProfile>;
   currentSessionId?: ID;
   version: number;
 };

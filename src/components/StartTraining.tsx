@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ParticipantSelector } from "./ParticipantSelector";
 import { Session, AthleteMaster } from "@/types/biathlon";
-import { createSessionAthlete } from "@/lib/biathlon-utils";
+import { createSessionAthlete, createAthleteMaster } from "@/lib/biathlon-utils";
 import { Calendar, Archive, Users, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -15,6 +16,8 @@ interface StartTrainingProps {
   onViewArchive: () => void;
   onAddToRoster: (athlete: AthleteMaster) => void;
   onDeleteFromRoster: (athleteId: string) => void;
+  onUpdateRoster: (athlete: AthleteMaster) => void;
+  onViewProfile: (athleteId: string) => void;
 }
 
 export const StartTraining = ({
@@ -23,12 +26,17 @@ export const StartTraining = ({
   onViewArchive,
   onAddToRoster,
   onDeleteFromRoster,
+  onUpdateRoster,
+  onViewProfile,
 }: StartTrainingProps) => {
   const [trainingName, setTrainingName] = useState("");
   const [trainingDate, setTrainingDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedAthletes, setSelectedAthletes] = useState<AthleteMaster[]>([]);
   const [showSelector, setShowSelector] = useState(false);
   const [showRosterManagement, setShowRosterManagement] = useState(false);
+  const [newAthleteName, setNewAthleteName] = useState("");
+  const [newAthleteProfileEnabled, setNewAthleteProfileEnabled] = useState(true);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const handleStart = () => {
     if (!trainingName.trim() || selectedAthletes.length === 0) return;
@@ -45,6 +53,22 @@ export const StartTraining = ({
     };
 
     onStartTraining(session);
+  };
+
+  const handleAddAthlete = () => {
+    if (!newAthleteName.trim()) return;
+    
+    const athlete = createAthleteMaster(newAthleteName.trim());
+    athlete.profileEnabled = newAthleteProfileEnabled;
+    
+    onAddToRoster(athlete);
+    setNewAthleteName("");
+    setNewAthleteProfileEnabled(true);
+    setShowAddDialog(false);
+  };
+
+  const handleToggleProfile = (athlete: AthleteMaster) => {
+    onUpdateRoster({ ...athlete, profileEnabled: !athlete.profileEnabled });
   };
 
   return (
@@ -146,50 +170,115 @@ export const StartTraining = ({
 
       {/* Roster Management Dialog */}
       <AlertDialog open={showRosterManagement} onOpenChange={setShowRosterManagement}>
-        <AlertDialogContent className="max-w-md">
+        <AlertDialogContent className="max-w-md max-h-[80vh] flex flex-col">
           <AlertDialogHeader>
             <AlertDialogTitle>Stammliste verwalten</AlertDialogTitle>
             <AlertDialogDescription>
-              Sportler:innen aus der Stammliste entfernen. Historische Trainings bleiben erhalten.
+              Sportler:innen verwalten, Profile aktivieren/deaktivieren
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="max-h-80 overflow-y-auto space-y-2 py-4">
+          <div className="flex-1 overflow-y-auto space-y-2 py-4">
             {roster.filter(a => !a.archived).map((athlete) => (
-              <div key={athlete.id} className="flex items-center justify-between p-3 rounded-md border">
-                <span>{athlete.name}</span>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Trash2 className="h-4 w-4" />
+              <div key={athlete.id} className="flex items-center justify-between p-3 rounded-md border gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{athlete.name}</p>
+                  {athlete.profileEnabled && (
+                    <p className="text-xs text-muted-foreground">Profil aktiv</p>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  {athlete.profileEnabled ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onViewProfile(athlete.id)}
+                    >
+                      Profil
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Sportler:in löschen?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        „{athlete.name}" dauerhaft aus der Stammliste löschen? Historische Trainings bleiben unangetastet.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Abbrechen</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDeleteFromRoster(athlete.id)}>
-                        Löschen
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleProfile(athlete)}
+                    >
+                      Aktivieren
+                    </Button>
+                  )}
+                  {athlete.profileEnabled && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleToggleProfile(athlete)}
+                    >
+                      Deaktivieren
+                    </Button>
+                  )}
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Sportler:in löschen?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          „{athlete.name}" dauerhaft aus der Stammliste löschen? Historische Trainings bleiben unangetastet.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDeleteFromRoster(athlete.id)}>
+                          Löschen
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </div>
             ))}
-            {roster.filter(a => !a.archived).length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                Keine Sportler:innen in der Stammliste
-              </div>
-            )}
           </div>
           <AlertDialogFooter>
-            <Button onClick={() => setShowRosterManagement(false)} className="w-full">
-              Fertig
-            </Button>
+            <AlertDialogCancel>Schließen</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Add Athlete Dialog */}
+      <AlertDialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sportler:in hinzufügen</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-athlete-name">Name</Label>
+              <Input
+                id="new-athlete-name"
+                placeholder="Name eingeben"
+                value={newAthleteName}
+                onChange={(e) => setNewAthleteName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAddAthlete();
+                }}
+              />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="profile-enabled"
+                checked={newAthleteProfileEnabled}
+                onCheckedChange={(checked) => setNewAthleteProfileEnabled(checked as boolean)}
+              />
+              <Label htmlFor="profile-enabled" className="cursor-pointer">
+                Profil für {newAthleteName.trim() || "Sportler:in"} anlegen
+              </Label>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAddAthlete}>
+              Hinzufügen
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

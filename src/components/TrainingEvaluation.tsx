@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { exportToCSV, exportSessionSummaryToCSV, copyToClipboard, downloadCSV, calculateHitRate, calculateTotals } from "@/lib/biathlon-utils";
 import { useToast } from "@/hooks/use-toast";
-import { Download, Copy, BarChart3, Calendar, Users, Edit } from "lucide-react";
+import { Download, Copy, BarChart3, Calendar, Users, Edit, Target } from "lucide-react";
 import { AthleteEntryEditor } from "./AthleteEntryEditor";
 import { useState } from "react";
 
@@ -13,6 +13,7 @@ interface TrainingEvaluationProps {
   onNewTraining: () => void;
   onViewArchive: () => void;
   onUpdateSession: (session: Session) => void;
+  onViewProfile?: (athleteId: string) => void;
 }
 
 export const TrainingEvaluation = ({
@@ -20,6 +21,7 @@ export const TrainingEvaluation = ({
   onNewTraining,
   onViewArchive,
   onUpdateSession,
+  onViewProfile,
 }: TrainingEvaluationProps) => {
   const { toast } = useToast();
   const [editingAthleteId, setEditingAthleteId] = useState<string | null>(null);
@@ -179,16 +181,28 @@ export const TrainingEvaluation = ({
               <Card key={athlete.athleteId} className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-lg">{athlete.nameSnapshot}</h3>
-                  {!isEditing && (
-                    <Button
-                      onClick={() => setEditingAthleteId(athlete.athleteId)}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Einlagen bearbeiten
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {onViewProfile && (
+                      <Button
+                        onClick={() => onViewProfile(athlete.athleteId)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Target className="h-4 w-4" />
+                        Profil
+                      </Button>
+                    )}
+                    {!isEditing && (
+                      <Button
+                        onClick={() => setEditingAthleteId(athlete.athleteId)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Edit className="h-4 w-4" />
+                        Bearbeiten
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 {isEditing ? (
