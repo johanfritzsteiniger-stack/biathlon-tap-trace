@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,8 +66,8 @@ serve(async (req) => {
       );
     }
 
-    // Hash password with bcrypt
-    const passwordHash = await bcrypt.hash(password);
+    // Hash password with PBKDF2
+    const passwordHash = await hashPasswordPBKDF2(password);
 
     // Insert new credentials using service role key (bypasses RLS)
     const { data, error } = await supabase
@@ -110,6 +109,36 @@ serve(async (req) => {
     );
   }
 });
+
+async function hashPasswordPBKDF2(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  const encoder = new TextEncoder();
+  const passwordKey = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(password),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+  
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    passwordKey,
+    256
+  );
+  
+  const hashArray = Array.from(new Uint8Array(derivedBits));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  return `pbkdf2:sha256:100000$${saltHex}$${hashHex}`;
+}
 
 async function verifyJWT(token: string) {
   try {
