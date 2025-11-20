@@ -33,16 +33,26 @@ type AthleteWithProfile = {
   hitRatePct?: number;
 };
 
+type LoginCredential = {
+  id: string;
+  name: string;
+  role: string;
+  athlete_name: string | null;
+  created_at: string;
+};
+
 const ProfilesIndex = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [athletes, setAthletes] = useState<AthleteWithProfile[]>([]);
+  const [loginCredentials, setLoginCredentials] = useState<LoginCredential[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newAthleteName, setNewAthleteName] = useState("");
   const [newAthleteProfileEnabled, setNewAthleteProfileEnabled] = useState(true);
   const [showManageDialog, setShowManageDialog] = useState(false);
+  const [showLoginListDialog, setShowLoginListDialog] = useState(false);
   const [showCreateLoginDialog, setShowCreateLoginDialog] = useState(false);
   const [selectedAthleteForLogin, setSelectedAthleteForLogin] = useState<AthleteMaster | null>(null);
   const [loginUsername, setLoginUsername] = useState("");
@@ -74,6 +84,28 @@ const ProfilesIndex = () => {
       console.error("Error loading athletes:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadLoginCredentials = async () => {
+    if (user?.role !== 'admin') return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_credentials')
+        .select('id, name, role, athlete_name, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading credentials:', error);
+        toast.error('Fehler beim Laden der Login-Zugänge');
+        return;
+      }
+
+      setLoginCredentials(data || []);
+    } catch (error) {
+      console.error('Error loading credentials:', error);
+      toast.error('Fehler beim Laden der Login-Zugänge');
     }
   };
 
@@ -211,6 +243,8 @@ const ProfilesIndex = () => {
       setSelectedAthleteForLogin(null);
       setLoginUsername("");
       setLoginPassword("");
+      // Reload credentials list
+      await loadLoginCredentials();
     } catch (error) {
       console.error("Error creating login:", error);
       toast.error("Fehler beim Erstellen des Login-Zugangs");
@@ -285,6 +319,20 @@ const ProfilesIndex = () => {
                 <h1 className="text-2xl font-bold text-foreground">Sportlerprofile</h1>
               </div>
               <div className="flex gap-2">
+                {user?.role === 'admin' && (
+                  <Button
+                    className="bg-teal text-teal-foreground hover:bg-teal/90"
+                    size="sm"
+                    onClick={() => {
+                      handleVibrate();
+                      loadLoginCredentials();
+                      setShowLoginListDialog(true);
+                    }}
+                    title="Login-Zugänge anzeigen"
+                  >
+                    <KeyRound className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   className="bg-teal text-teal-foreground hover:bg-teal/90"
                   size="sm"
@@ -581,6 +629,59 @@ const ProfilesIndex = () => {
             >
               Erstellen
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Login-Zugänge Liste Dialog */}
+      <AlertDialog open={showLoginListDialog} onOpenChange={setShowLoginListDialog}>
+        <AlertDialogContent className="max-w-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Vorhandene Login-Zugänge</AlertDialogTitle>
+            <AlertDialogDescription>
+              Übersicht aller registrierten Benutzer und deren Zugänge.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto py-4">
+            {loginCredentials.length === 0 ? (
+              <p className="py-8 text-center text-muted-foreground">
+                Noch keine Login-Zugänge vorhanden.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {loginCredentials.map((credential) => (
+                  <Card key={credential.id} className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold">{credential.name}</p>
+                          <Badge variant={credential.role === 'admin' ? 'default' : 'outline'}>
+                            {credential.role === 'admin' ? 'Admin' : 'Athlet'}
+                          </Badge>
+                        </div>
+                        {credential.athlete_name && (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Athlet: {credential.athlete_name}
+                          </p>
+                        )}
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Erstellt: {new Date(credential.created_at).toLocaleDateString('de-DE', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Schließen</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
