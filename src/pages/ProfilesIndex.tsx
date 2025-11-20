@@ -54,9 +54,12 @@ const ProfilesIndex = () => {
   const [showManageDialog, setShowManageDialog] = useState(false);
   const [showLoginListDialog, setShowLoginListDialog] = useState(false);
   const [showCreateLoginDialog, setShowCreateLoginDialog] = useState(false);
+  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [selectedAthleteForLogin, setSelectedAthleteForLogin] = useState<AthleteMaster | null>(null);
+  const [selectedCredentialForReset, setSelectedCredentialForReset] = useState<LoginCredential | null>(null);
   const [loginUsername, setLoginUsername] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -262,6 +265,65 @@ const ProfilesIndex = () => {
     } catch (error) {
       console.error("Error creating login:", error);
       toast.error("Fehler beim Erstellen des Login-Zugangs");
+    }
+  };
+
+  const handleOpenResetPassword = (credential: LoginCredential) => {
+    handleVibrate();
+    setSelectedCredentialForReset(credential);
+    setNewPassword("");
+    setShowResetPasswordDialog(true);
+  };
+
+  const handleResetPassword = async () => {
+    if (!selectedCredentialForReset || !newPassword.trim()) {
+      toast.error("Bitte neues Passwort eingeben");
+      return;
+    }
+
+    if (user?.role !== 'admin') {
+      toast.error("Nur Admins können Passwörter zurücksetzen");
+      return;
+    }
+
+    handleVibrate();
+    try {
+      const token = localStorage.getItem('auth_token');
+      
+      if (!token) {
+        toast.error("Sie müssen angemeldet sein");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: {
+          userId: selectedCredentialForReset.id,
+          newPassword: newPassword
+        },
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      // Check data.error first for specific error message
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      if (error) {
+        console.error("Function error:", error);
+        toast.error("Fehler beim Zurücksetzen des Passworts");
+        return;
+      }
+
+      toast.success(`Passwort für ${selectedCredentialForReset.name} wurde zurückgesetzt`);
+      setShowResetPasswordDialog(false);
+      setSelectedCredentialForReset(null);
+      setNewPassword("");
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error("Fehler beim Zurücksetzen des Passworts");
     }
   };
 
@@ -688,6 +750,15 @@ const ProfilesIndex = () => {
                           })}
                         </p>
                       </div>
+                      {credential.role !== 'admin' && (
+                        <Button
+                          className="bg-teal text-teal-foreground hover:bg-teal/90"
+                          size="sm"
+                          onClick={() => handleOpenResetPassword(credential)}
+                        >
+                          Passwort zurücksetzen
+                        </Button>
+                      )}
                     </div>
                   </Card>
                 ))}
@@ -696,6 +767,45 @@ const ProfilesIndex = () => {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Schließen</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Passwort zurücksetzen Dialog */}
+      <AlertDialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Passwort zurücksetzen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Neues Passwort für {selectedCredentialForReset?.name} festlegen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Neues Passwort</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Neues Passwort"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowResetPasswordDialog(false);
+              setSelectedCredentialForReset(null);
+              setNewPassword("");
+            }}>
+              Abbrechen
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleResetPassword}
+              disabled={!newPassword.trim()}
+            >
+              Zurücksetzen
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
