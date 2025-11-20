@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import ProfilesIndex from "./pages/ProfilesIndex";
 import Training from "./pages/Training";
 import Archive from "./pages/Archive";
+import AthleteDashboard from "./pages/AthleteDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/archive" element={<Archive />} />
             <Route path="/profiles" element={<ProfilesIndex />} />
             <Route path="/profiles/:athleteId" element={<Training />} />
+            <Route path="/athlete-dashboard" element={<AthleteDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
