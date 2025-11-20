@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      login_attempts: {
+        Row: {
+          attempt_time: string | null
+          id: string
+          ip_address: string | null
+          success: boolean | null
+          username: string
+        }
+        Insert: {
+          attempt_time?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean | null
+          username: string
+        }
+        Update: {
+          attempt_time?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean | null
+          username?: string
+        }
+        Relationships: []
+      }
       user_credentials: {
         Row: {
           athlete_name: string | null
@@ -49,7 +73,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_old_login_attempts: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "athlete"
