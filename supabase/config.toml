@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.create-athlete-login]
 verify_jwt = false
+
+[functions.list-credentials]
+verify_jwt = false
