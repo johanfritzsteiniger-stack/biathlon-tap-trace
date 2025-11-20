@@ -192,13 +192,14 @@ const ProfilesIndex = () => {
         }
       });
 
-      // Check for error in response data first (contains the actual error message)
+      // When edge function returns non-2xx status, both error and data are populated
+      // Check data first for the actual error message from the function
       if (data?.error) {
         toast.error(data.error);
         return;
       }
 
-      // Then check for general errors
+      // If there's an error but no data.error, it's a different type of error
       if (error) {
         console.error("Function error:", error);
         toast.error("Fehler beim Erstellen des Login-Zugangs");
