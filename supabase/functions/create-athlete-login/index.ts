@@ -22,9 +22,10 @@ serve(async (req) => {
 
     // Extract and verify JWT token
     const token = authHeader.replace('Bearer ', '');
-    const payload = parseJWT(token);
+    const payload = await verifyJWT(token);
     
     if (!payload || payload.role !== 'admin') {
+      console.log('Access denied - payload:', payload);
       return new Response(
         JSON.stringify({ error: 'Nur Admins können Login-Zugänge erstellen' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -88,13 +89,54 @@ serve(async (req) => {
   }
 });
 
-function parseJWT(token: string) {
+async function verifyJWT(token: string) {
   try {
     const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = atob(parts[1]);
-    return JSON.parse(payload);
-  } catch {
+    if (parts.length !== 3) {
+      console.log('Invalid JWT format');
+      return null;
+    }
+
+    // Dekodiere und parse das Payload
+    const payload = JSON.parse(atob(parts[1]));
+    
+    // Prüfe Ablaufdatum
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp && payload.exp < now) {
+      console.log('JWT expired');
+      return null;
+    }
+
+    // Verifiziere die Signatur
+    const jwtSecret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(jwtSecret);
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    );
+
+    const signatureInput = `${parts[0]}.${parts[1]}`;
+    const signature = Uint8Array.from(atob(parts[2]), c => c.charCodeAt(0));
+    
+    const isValid = await crypto.subtle.verify(
+      'HMAC',
+      key,
+      signature,
+      encoder.encode(signatureInput)
+    );
+
+    if (!isValid) {
+      console.log('Invalid JWT signature');
+      return null;
+    }
+
+    return payload;
+  } catch (error) {
+    console.error('JWT verification error:', error);
     return null;
   }
 }
