@@ -201,13 +201,7 @@ const ProfilesIndex = () => {
     setShowCreateLoginDialog(true);
   };
 
-  const hashPassword = async (password: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  };
+  // Password hashing is now handled by the Edge Function using bcrypt
 
   const handleCreateLogin = async () => {
     if (!selectedAthleteForLogin || !loginUsername.trim() || !loginPassword.trim()) {

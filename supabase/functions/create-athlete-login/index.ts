@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,12 +21,29 @@ serve(async (req) => {
       );
     }
 
-    // Extract and verify JWT token
     const token = authHeader.replace('Bearer ', '');
     const payload = await verifyJWT(token);
     
-    if (!payload || payload.role !== 'admin') {
-      console.log('Access denied - payload:', payload);
+    if (!payload) {
+      return new Response(
+        JSON.stringify({ error: 'Ungültiges Token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Verify admin role from database (not from JWT)
+    const { data: userRole } = await supabase
+      .from('user_credentials')
+      .select('role')
+      .eq('id', payload.sub)
+      .single();
+
+    if (!userRole || userRole.role !== 'admin') {
+      console.log('Access denied - not admin');
       return new Response(
         JSON.stringify({ error: 'Nur Admins können Login-Zugänge erstellen' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -41,12 +59,16 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Validate password requirements
+    if (password.length < 8) {
+      return new Response(
+        JSON.stringify({ error: 'Passwort muss mindestens 8 Zeichen lang sein' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    // Hash password with SHA-256
-    const passwordHash = await hashPassword(password);
+    // Hash password with bcrypt
+    const passwordHash = await bcrypt.hash(password);
 
     // Insert new credentials using service role key (bypasses RLS)
     const { data, error } = await supabase
@@ -97,18 +119,15 @@ async function verifyJWT(token: string) {
       return null;
     }
 
-    // Dekodiere und parse das Payload
     const payload = JSON.parse(atob(parts[1]));
     
-    // Prüfe Ablaufdatum
     const now = Math.floor(Date.now() / 1000);
     if (payload.exp && payload.exp < now) {
       console.log('JWT expired');
       return null;
     }
 
-    // Verifiziere die Signatur
-    const jwtSecret = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const jwtSecret = Deno.env.get('JWT_SECRET')!;
     const encoder = new TextEncoder();
     const keyData = encoder.encode(jwtSecret);
     const key = await crypto.subtle.importKey(
@@ -139,12 +158,4 @@ async function verifyJWT(token: string) {
     console.error('JWT verification error:', error);
     return null;
   }
-}
-
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
