@@ -46,13 +46,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: { name, password },
       });
 
+      // Check data.error first for specific error message from edge function
+      if (data?.error) {
+        return { error: data.error };
+      }
+
+      // Then check for general errors
       if (error) {
         console.error('Login error:', error);
         return { error: 'Login fehlgeschlagen' };
-      }
-
-      if (data.error) {
-        return { error: data.error };
       }
 
       // Speichere Token und User
