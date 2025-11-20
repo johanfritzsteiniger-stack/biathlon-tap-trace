@@ -2,3 +2,6 @@ project_id = "nulosjrmsqogskornbqh"
 
 [functions.auth-login]
 verify_jwt = false
+
+[functions.create-athlete-login]
+verify_jwt = false
