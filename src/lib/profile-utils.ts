@@ -108,3 +108,8 @@ export const exportProfileToCSV = (
 
   return csv;
 };
+
+export const formatPct = (value: number): string => {
+  if (isNaN(value)) return '—';
+  return `${value.toFixed(1)}%`;
+};
