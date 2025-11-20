@@ -194,7 +194,12 @@ const ProfilesIndex = () => {
 
       if (error) {
         console.error("Function error:", error);
-        toast.error(error.message || "Fehler beim Erstellen des Login-Zugangs");
+        // Check if there's error data from the edge function
+        if (data?.error) {
+          toast.error(data.error);
+        } else {
+          toast.error("Fehler beim Erstellen des Login-Zugangs");
+        }
         return;
       }
 
