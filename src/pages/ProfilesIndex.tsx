@@ -91,10 +91,24 @@ const ProfilesIndex = () => {
     if (user?.role !== 'admin') return;
     
     try {
-      const { data, error } = await supabase
-        .from('user_credentials')
-        .select('id, name, role, athlete_name, created_at')
-        .order('created_at', { ascending: false });
+      const token = localStorage.getItem('auth_token');
+      
+      if (!token) {
+        toast.error('Sie müssen angemeldet sein');
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('list-credentials', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      // Check data.error first for specific error message
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
 
       if (error) {
         console.error('Error loading credentials:', error);
@@ -102,7 +116,7 @@ const ProfilesIndex = () => {
         return;
       }
 
-      setLoginCredentials(data || []);
+      setLoginCredentials(data?.credentials || []);
     } catch (error) {
       console.error('Error loading credentials:', error);
       toast.error('Fehler beim Laden der Login-Zugänge');
