@@ -67,7 +67,7 @@ const Home = () => {
           </Button>
 
           <div className="flex justify-end">
-            <Button variant="ghost" onClick={handleArchive} className="gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" onClick={handleArchive} className="gap-2 text-sm text-muted-foreground hover:text-foreground bg-accent opacity-95 text-left font-sans">
               <FolderOpen className="h-4 w-4" />
               Archiv
             </Button>
