@@ -49,7 +49,7 @@ const Home = () => {
   return <main className="min-h-screen bg-background p-4">
       <div className="mx-auto max-w-screen-sm space-y-6 pt-8">
         <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold text-foreground">Biathlon Training</h1>
+          <h1 className="text-3xl font-bold text-foreground">Rocket Rookies-Shooting Range      </h1>
           <p className="text-sm text-muted-foreground">Willkommen, {user.name}</p>
           <Button variant="ghost" size="sm" onClick={handleLogout} className="mx-auto gap-2">
             <LogOut className="h-4 w-4" />
