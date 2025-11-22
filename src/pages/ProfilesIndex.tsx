@@ -384,7 +384,7 @@ const ProfilesIndex = () => {
           const athletesForLetter = athletesByLetter.get(letter);
           if (!athletesForLetter || athletesForLetter.length === 0) return null;
           return <div key={letter} id={`letter-${letter}`} className="space-y-2">
-                  <h2 className="sticky top-[140px] z-[5] bg-background py-2 text-lg font-semibold text-muted-foreground">
+                  <h2 className="sticky top-[140px] z-[5] bg-background py-2 text-lg font-semibold text-alt">
                     {letter}
                   </h2>
                   <div className="space-y-2">
