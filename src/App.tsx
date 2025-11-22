@@ -20,7 +20,7 @@ const App = () => <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Home />} className="bg-accent" />
+            <Route path="/" element={<Home />} className="bg-accent text-accent" />
             <Route path="/training" element={<Training />} />
             <Route path="/training/:sessionId" element={<Training />} />
             <Route path="/archive" element={<Archive />} />
