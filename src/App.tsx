@@ -11,11 +11,8 @@ import Training from "./pages/Training";
 import Archive from "./pages/Archive";
 import AthleteDashboard from "./pages/AthleteDashboard";
 import NotFound from "./pages/NotFound";
-
 const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />
@@ -23,7 +20,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home />} className="bg-accent" />
             <Route path="/training" element={<Training />} />
             <Route path="/training/:sessionId" element={<Training />} />
             <Route path="/archive" element={<Archive />} />
@@ -36,7 +33,5 @@ const App = () => (
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
-  </QueryClientProvider>
-);
-
+  </QueryClientProvider>;
 export default App;
