@@ -46,10 +46,10 @@ const Home = () => {
   if (!user) {
     return null;
   }
-  return <main className="min-h-screen bg-background p-4">
-      <div className="mx-auto max-w-screen-sm space-y-6 pt-8">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold text-foreground px-0 text-center mx-[60px]">Rocket Rookies-Shooting Range                     </h1>
+  return <main className="min-h-screen bg-background p-4 overflow-x-hidden">
+      <div className="mx-auto max-w-screen-sm space-y-6 pt-8 w-full">
+        <div className="space-y-2 text-center px-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground break-words">Rocket Rookies-Shooting Range</h1>
           <p className="text-sm text-muted-foreground">Willkommen, {user.name}</p>
           <Button variant="ghost" size="sm" onClick={handleLogout} className="mx-auto gap-2">
             <LogOut className="h-4 w-4" />
@@ -57,13 +57,13 @@ const Home = () => {
           </Button>
         </div>
 
-        <Card className="space-y-4 p-6 shadow-lg">
-          <Button onClick={handleNewTraining} className="h-auto min-h-[72px] w-full flex-col items-start justify-center gap-1 rounded-2xl bg-alt px-6 text-left text-alt-foreground shadow-md transition-all hover:bg-alt/90 hover:shadow-lg active:scale-[0.98]" size="lg">
-            <div className="flex w-full items-center justify-between">
-              <span className="text-xl font-semibold text-accent">Neues Training</span>
-              <Play className="h-10 w-10 opacity-80" />
+        <Card className="space-y-4 p-4 sm:p-6 shadow-lg w-full">
+          <Button onClick={handleNewTraining} className="h-auto min-h-[72px] w-full flex-col items-start justify-center gap-1 rounded-2xl bg-alt px-4 sm:px-6 text-left text-alt-foreground shadow-md transition-all hover:bg-alt/90 hover:shadow-lg active:scale-[0.98]" size="lg">
+            <div className="flex w-full items-center justify-between gap-2">
+              <span className="text-lg sm:text-xl font-semibold text-accent">Neues Training</span>
+              <Play className="h-8 w-8 sm:h-10 sm:w-10 opacity-80 flex-shrink-0" />
             </div>
-            <span className="text-sm font-normal opacity-70">Trainingsname & Teilnehmer wählen</span>
+            <span className="text-xs sm:text-sm font-normal opacity-70">Trainingsname & Teilnehmer wählen</span>
           </Button>
 
           <div className="flex justify-end">
@@ -75,12 +75,12 @@ const Home = () => {
 
           <div className="h-px bg-border" />
 
-          <Button onClick={handleProfiles} className="h-auto min-h-[72px] w-full flex-col items-start justify-center gap-1 rounded-2xl bg-alt px-6 text-left text-alt-foreground shadow-md transition-all hover:bg-alt/90 hover:shadow-lg active:scale-[0.98]" size="lg">
-            <div className="flex w-full items-center justify-between">
-              <span className="text-xl font-semibold text-accent">Sportlerprofile</span>
-              <Users className="h-10 w-10 opacity-80" />
+          <Button onClick={handleProfiles} className="h-auto min-h-[72px] w-full flex-col items-start justify-center gap-1 rounded-2xl bg-alt px-4 sm:px-6 text-left text-alt-foreground shadow-md transition-all hover:bg-alt/90 hover:shadow-lg active:scale-[0.98]" size="lg">
+            <div className="flex w-full items-center justify-between gap-2">
+              <span className="text-lg sm:text-xl font-semibold text-accent">Sportlerprofile</span>
+              <Users className="h-8 w-8 sm:h-10 sm:w-10 opacity-80 flex-shrink-0" />
             </div>
-            <span className="text-sm font-normal opacity-70">Alle Profile (A–Z)</span>
+            <span className="text-xs sm:text-sm font-normal opacity-70">Alle Profile (A–Z)</span>
           </Button>
         </Card>
       </div>
